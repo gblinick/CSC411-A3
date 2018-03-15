@@ -9,7 +9,7 @@ import os
 
 #os.chdir('\Users\Gideon\Desktop\U of T\Year 4\Term2\CSC411\A3\CSC411-A3')
 
-#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 def get_data(filename):
     ''' return a list whose elements are each a headline from filename'''
@@ -42,6 +42,16 @@ def top_keywords(dict, num):
     kv = sorted( zip(vals, keys), reverse=True )[:num] #sorts both lists based on order of vals, and selects the top num results
     return kv
 
+
+
+##Additions for Part 7
+from sklearn import tree
+import graphviz
+
+def mutual_info(Y, x):
+    #I(Y, x) = H(x) - H(x, Y) = H(Y) - H(Y,x)
+    #H(Y) = Prob(Y) - sum[ ]
+    pass
 
 if __name__ == "__main__":
     
@@ -80,5 +90,23 @@ if __name__ == "__main__":
     
     
     
+    #Part 7
+    rd.seed(0) #numpy randomness used internally of sklearn.tree
+    max_depths = [5, 10, None]
+    for dep in max_depths:
+        clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=dep)
     
+    X = [[0, 0], [1, 1]]
+    Y = [0, 1]
+    clf.fit(X,Y)
+    dot_data = tree.export_graphviz(clf, out_file='test2.dot') 
+
     
+    if False:
+        from sklearn.datasets import load_iris
+        iris = load_iris()
+        clf = tree.DecisionTreeClassifier()
+        clf = clf.fit(iris.data, iris.target)
+        dot_data = tree.export_graphviz(clf, out_file='test.dot') 
+        graph = graphviz.Source(dot_data) 
+        graph.render() 
