@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import re
 from collections import Counter
 
+##Additions for Part 7
+from sklearn import tree
+#import graphviz
+
 #os.chdir('\Users\Gideon\Desktop\U of T\Year 4\Term2\CSC411\A3\CSC411-A3')
 
 #os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
@@ -71,6 +75,11 @@ def sets(fake_lines, real_lines):
     
     return training_set, validation_set, testing_set
 
+def mutual_info(Y, x):
+    #I(Y, x) = H(x) - H(x, Y) = H(Y) - H(Y,x)
+    #H(Y) = Prob(Y) - sum[ ]
+    pass
+
 if __name__ == "__main__":
     
     # Part 1
@@ -98,35 +107,6 @@ if __name__ == "__main__":
 
 
     # Part 2
-    
-
-##Additions for Part 7
-from sklearn import tree
-#import graphviz
-
-def mutual_info(Y, x):
-    #I(Y, x) = H(x) - H(x, Y) = H(Y) - H(Y,x)
-    #H(Y) = Prob(Y) - sum[ ]
-    pass
-
-if __name__ == "__main__":
-    
-    # Part 1
-    with open('resources/clean_fake.txt') as f:
-        passage_fake = f.read()
-    
-    words_fake = re.findall(r'\w+', passage_fake)
-    cap_words_fake = [word.upper() for word in words_fake]
-    word_counts_fake = Counter(cap_words_fake)
-    most_common_fake = word_counts_fake.most_common(5)
-    
-    with open('resources/clean_real.txt') as f:
-        passage_real = f.read()
-    
-    words_real = re.findall(r'\w+', passage_real)
-    cap_words_real = [word.upper() for word in words_real]
-    word_counts_real = Counter(cap_words_real)
-    most_common_real = word_counts_real.most_common(5)
     
 
     #Part 7
