@@ -46,7 +46,7 @@ def top_keywords(dict, num):
 
 ##Additions for Part 7
 from sklearn import tree
-import graphviz
+#import graphviz
 
 def mutual_info(Y, x):
     #I(Y, x) = H(x) - H(x, Y) = H(Y) - H(Y,x)
@@ -92,17 +92,17 @@ if __name__ == "__main__":
     
     #Part 7
     rd.seed(0) #numpy randomness used internally of sklearn.tree
-    max_depths = [5, 10, None]
+    max_depths = [5, 10, 15, 20, None]
     for dep in max_depths:
         clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=dep)
-    
-    X = [[0, 0], [1, 1]]
-    Y = [0, 1]
-    clf.fit(X,Y)
-    dot_data = tree.export_graphviz(clf, out_file='test2.dot') 
+        X = [[0, 0], [1, 1]] #replace these with actual training data
+        Y = [0, 1]
+        clf.fit(X,Y)
+        dot_data = tree.export_graphviz(clf, out_file='resources/part7/max_dep='+str(dep)+'.dot' ) 
+        #use http://webgraphviz.com/ to generate graphic from this file
 
     
-    if False:
+    if False: #graphviz doesn't work
         from sklearn.datasets import load_iris
         iris = load_iris()
         clf = tree.DecisionTreeClassifier()
