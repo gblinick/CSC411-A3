@@ -3,8 +3,7 @@ import os
 import numpy as np
 from numpy import random as rd
 import matplotlib.pyplot as plt
-import re
-from collections import Counter
+
 
 ##Additions for Part 7
 from sklearn import tree
@@ -107,7 +106,19 @@ if __name__ == "__main__":
 
 
     # Part 2
+    p_fake = len(fake_lines)/(len(fake_lines) + len(real_lines))
+    p_real = len(real_lines)/(len(fake_lines) + len(real_lines))
     
+    ## p(word|real) = the percentage for that word in real_stats
+    
+    list1 = []
+    for headline in training_set[0:2]:
+        #print(headline)
+        words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
+        for word in words:
+            #print(word)
+            real_stats.get(word)
+        
 
     #Part 7
     rd.seed(0) #numpy randomness used internally of sklearn.tree
