@@ -5,7 +5,6 @@ from numpy import random as rd
 import matplotlib.pyplot as plt
 import re
 from collections import Counter
-import os
 
 #os.chdir('\Users\Gideon\Desktop\U of T\Year 4\Term2\CSC411\A3\CSC411-A3')
 
@@ -43,40 +42,87 @@ def top_keywords(dict, num):
     return kv
 
 
+def part_1(dict1,dict2):   
+    ''' return a list of the top 10 words by percentage that appear in dict1 over dict2'''
+    new_dict1 = {x: 0 for x in dict2 if x not in dict1}
+    dict1.update(new_dict1)
+    dict1_minus_dict2_perc = {x: dict1[x] - dict2[x] for x in dict1 if x in dict2}
+    dict1_minus_dict2_keywords = top_keywords(dict1_minus_dict2_perc, 10)
+    
+    return dict1_minus_dict2_keywords
+
+def sets(fake_lines, real_lines):
+    rd.seed(0)
+    rd.shuffle(fake_lines)
+    training_set = fake_lines[:int(round(0.7*len(fake_lines)))]
+    validation_set = fake_lines[int(round(0.7*len(fake_lines))):int(round(0.85*len(fake_lines)))]
+    testing_set = fake_lines[int(round(0.85*len(fake_lines))):]
+    
+    rd.seed(0)
+    rd.shuffle(real_lines)
+    training_set.extend(real_lines[:int(round(0.7*len(real_lines)))])
+    validation_set.extend(real_lines[int(round(0.7*len(real_lines))):int(round(0.85*len(real_lines)))])
+    testing_set.extend(real_lines[int(round(0.85*len(real_lines))):])
+    
+    rd.seed(0)
+    rd.shuffle(training_set)
+    rd.shuffle(validation_set)
+    rd.shuffle(testing_set)
+    
+    return training_set, validation_set, testing_set
+
 if __name__ == "__main__":
     
     # Part 1
-    
-    
     ## Get data
     fake_lines = get_data('resources/clean_fake.txt') #Get list containing headlines
     real_lines = get_data('resources/clean_real.txt')
     
     ## Sort 
-    ### By percentages
+    '''Note that fake_stats and real_stats get changed (appended to) in the part_1 function
+    when we add in missing words'''
     fake_stats = get_stats(fake_lines) #compute probabilities for each word
     real_stats = get_stats(real_lines)
    
-
-    new_real = {x: 0 for x in fake_stats if x not in real_stats}
-    new_fake = {x: 0 for x in real_stats if x not in fake_stats}
     
-    fake_stats.update(new_fake)
-    real_stats.update(new_real)
-    
+    ## Top differences by percentage
+    fake_minus_real_top = part_1(fake_stats, real_stats)
+    real_minus_fake_top = part_1(real_stats, fake_stats)
 
-    ## Percentages
-    ### Get top 10 
+    ## Top 10 keywords by percentage
     fake_keywords = top_keywords(fake_stats, 10)
     real_keywords = top_keywords(real_stats, 10)
     
-    ### Get differences in for common words
-    fake_minus_real_perc = {x: fake_stats[x] - real_stats[x] for x in fake_stats if x in real_stats}
-    real_minus_fake_perc = {x: real_stats[x] - fake_stats[x] for x in real_stats if x in fake_stats}
+    ## Divide datasets
+    training_set, validation_set, testing_set = sets(fake_lines, real_lines)
+
+
+    # Part 2
     
-    ### Get top common words that differ 
-    fake_minus_real_keywords = top_keywords(fake_minus_real_perc, 10)
-    real_minus_fake_keywords = top_keywords(real_minus_fake_perc, 10)
+            
+                
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
