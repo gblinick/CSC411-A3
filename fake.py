@@ -5,6 +5,7 @@ from numpy import random as rd
 import matplotlib.pyplot as plt
 
 from sklearn import tree
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 #import graphviz
 
 #os.chdir('\Users\Gideon\Desktop\U of T\Year 4\Term2\CSC411\A3\CSC411-A3')
@@ -60,7 +61,7 @@ def part_1(dict1, dict2):
 
 def sets(fake_lines, real_lines):
     '''divide the data into training, validation, and testing sets'''
-    rd.seed(0)
+    rd.seed(1)
     rd.shuffle(fake_lines)
     rd.shuffle(real_lines)
 
@@ -143,51 +144,59 @@ if __name__ == "__main__":
     '''
 
     ## Part 7
-    rd.seed(0)          #numpy randomness used internally of sklearn.tree
-    max_depths = [5,10,20,50,100,None]
+        #note that this entire section was run with the rd.seed() in the sets() function as rd.seed(1)
+    rd.seed(0)  #numpy randomness used internally of sklearn.tree
+    max_depths = [2, 3, 5, 10, 15, 20, 35, 50, 75, 100, None]
+    max_feats = [3, 10, 15, None] #max_features
     all_words = list( fake_stats.keys() )
+    stp_wrds=False #include stop words
+    if not stp_wrds:
+        all_words = [x for x in all_words if x not in ENGLISH_STOP_WORDS]
     
     X = dict_to_vec(all_words, training_set)
     Y = y_tr.copy()
-    tr_res = []
     
     x_va = dict_to_vec(all_words, validation_set)
     y_va = np.array(y_va)
-    va_res = []
     
     x_te = dict_to_vec(all_words, testing_set)
     y_te = np.array(y_te)
-    te_res = []
     
-    for dep in max_depths:
-        clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=dep)
-            #X = [[0, 0], [1, 1], [3,2] ] #replace these with actual training data
-            #Y = [0, 1,1]
-        clf.fit(X,Y)
-        dot_data = tree.export_graphviz(clf, out_file='resources/part7/max_dep='+str(dep)+'.dot' )
-            #use http://webgraphviz.com/ to generate graphic from this file
-        
-        tr_result = clf.predict(X) #get accuracy on training set
-        correct = len(y_tr) - np.count_nonzero(tr_result - y_tr) 
-        tr_res += [ correct/len(y_tr) ] 
-        va_result = clf.predict(x_va) #on validation set
-        correct = len(y_va) - np.count_nonzero(va_result - y_va) 
-        va_res += [ correct/len(y_va) ]
-        te_result = clf.predict(x_te) #on testing set
-        correct = len(y_te) - np.count_nonzero(te_result - y_te) 
-        te_res += [ correct/len(y_te) ] 
-    filename = 'part7a.jpg'
-    e = len(max_depths) - 1
-    plt.scatter(max_depths[:e], tr_res[:e], label='Training Data')
-    plt.scatter(max_depths[:e], va_res[:e], label='Validation Data')
-    plt.scatter(max_depths[:e], te_res[:e], label='Testing Data')
-    plt.title('Learning Curve')
-    plt.xlabel('max_depth')
-    plt.ylabel('accuracy')
-    plt.legend()
-    #plt.show()
-    plt.savefig('resources/' + filename)
-    plt.close()
+    for max_feat in max_feats:
+        tr_res = [] #initialize variables to store results
+        va_res = []
+        te_res = []
+        for dep in max_depths:
+            clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=dep, max_features=max_feat)
+                #X = [[0, 0], [1, 1], [3,2] ] #replace these with actual training data
+                #Y = [0, 1,1]
+            clf.fit(X,Y)
+            
+            info = 'max_dep='+str(dep) + '_max_features='+str(max_feat) + 'stop_words='+str(stp_wrds) #label for filename with info on parameters used
+            dot_data = tree.export_graphviz(clf, out_file='resources/part7/'+info+'.dot' )
+                #use http://webgraphviz.com/ to generate graphic from this file
+            
+            tr_result = clf.predict(X) #get accuracy on training set
+            correct = len(y_tr) - np.count_nonzero(tr_result - y_tr) 
+            tr_res += [ correct/len(y_tr) ] 
+            va_result = clf.predict(x_va) #on validation set
+            correct = len(y_va) - np.count_nonzero(va_result - y_va) 
+            va_res += [ correct/len(y_va) ]
+            te_result = clf.predict(x_te) #on testing set
+            correct = len(y_te) - np.count_nonzero(te_result - y_te) 
+            te_res += [ correct/len(y_te) ] 
+        filename = 'part7a_max_features='+str(max_feat)+'stop_words='+str(stp_wrds)+'.jpg'
+        e = len(max_depths) - 1
+        plt.scatter(max_depths[:e], tr_res[:e], label='Training Data')
+        plt.scatter(max_depths[:e], va_res[:e], label='Validation Data')
+        plt.scatter(max_depths[:e], te_res[:e], label='Testing Data')
+        plt.title('Learning Curve')
+        plt.xlabel('max_depth')
+        plt.ylabel('accuracy')
+        plt.legend()
+        #plt.show()
+        plt.savefig('resources/' + filename)
+        plt.close()
     
     
     
