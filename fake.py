@@ -3,12 +3,11 @@ import os
 import numpy as np
 from numpy import random as rd
 import matplotlib.pyplot as plt
-
+import math
 from sklearn import tree
 #import graphviz
 
-#os.chdir('\Users\Gideon\Desktop\U of T\Year 4\Term2\CSC411\A3\CSC411-A3')
-os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 
 def get_data(filename):
@@ -32,6 +31,19 @@ def get_stats(lines, output='dict'):
                 dict[word] = 1
     k = len( lines ) #number of headlines
     dict = { word:dict[word]/k for word in dict.keys() }
+    return dict
+
+def get_count(lines, output='dict'):
+    ''' return a dictionary, where every word that appears in a headline in lines
+    is a key, with value equal to count(word)/number of headlines'''
+    dict = {}
+    for line in lines:
+        words = list(set( line.split(' ') )) #converting to set and back to a list removes duplicates
+        for word in words:
+            if word in dict.keys():
+                dict[word] += 1
+            else: 
+                dict[word] = 1
     return dict
 
 def top_keywords(dict, num):
@@ -130,17 +142,85 @@ if __name__ == "__main__":
     p_real = len(real_lines)/(len(fake_lines) + len(real_lines))
     
     # p(word|real) = the percentage for that word in real_stats
+    # what we want is p(real|words in headline).
+    # this is equal to p(words in headline|real)*p(real), divided by
+    # p(words in headline|real)*p(real) + p(words in headline|fake)*p(fake)
+    # We already have p(real) and p(fake) from above, so we just need to find
+    # p(words in headline|real) and p(words in headline|fake)
+    # p(words in headline|real) is equal to count(word & real) + mp
+    # divded by count(real) + m.
+    # So we need to choose values for m and p and then come up with a
+    # dictionaries of the adjusted probabilities.
     
-    #wasn't sure what this was for... commenting cause I kept thinking I needed to edit this
-    '''
-    list1 = []
-    for headline in training_set[0:2]:
-        #print(headline)
-        words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
-        for word in words:
-            #print(word)
-            real_stats.get(word)
-    '''
+    
+    all_words = list(real_stats.keys())
+    
+    p = 1/(2*5833) #2 classes and 5833 words leads to 1 example per word per class
+    m = 2*5833
+    
+    fake_counts = get_count(fake_lines) 
+    real_counts = get_count(real_lines)
+
+    missing = { x:0 for x in fake_counts.keys() if x not in real_counts.keys() }
+    real_counts.update( missing )
+    
+    missing = { x:0 for x in real_counts.keys() if x not in fake_counts.keys() }
+    fake_counts.update( missing )
+    
+    
+    
+    adjusted_fake_counts = {}
+    adjusted_real_counts = {}
+    
+    
+    for word in all_words:
+        adjusted_fake_counts[word] = fake_counts[word] + m*p
+        adjusted_real_counts[word] = real_counts[word] + m*p
+    
+    naive_divisor = len(all_words) + m
+    
+    adjusted_fake_stats = {}
+    adjusted_real_stats = {}
+    for word in all_words:
+        adjusted_fake_stats[word] = adjusted_fake_counts[word]/naive_divisor
+        adjusted_real_stats[word] = adjusted_real_counts[word]/naive_divisor
+        
+        
+ 
+    
+    ## p(words in headline|real) and p(words in headline|fake) 
+    ## put into the dictionaries total_real_probabilities and 
+    ## total_fake_probabilities, respectively
+    probabilities_real = []
+    probabilities_fake = []
+    total_real_probabilities = {}
+    total_fake_probabilities = {}
+    
+    for headline in training_set:
+        headline_words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
+        for word in headline_words:
+            probabilities_real.append(adjusted_real_stats.get(word))
+            probabilities_fake.append(adjusted_fake_stats.get(word))
+        non_headline_words = [x for x in all_words if x not in headline_words]
+        for word in non_headline_words:
+            probabilities_real.append(1 - adjusted_real_stats.get(word))
+            probabilities_fake.append(1 - adjusted_fake_stats.get(word))
+        
+        total_real_probability = 0
+        for probability in probabilities_real:
+            total_real_probability = total_real_probability + math.log(probability)
+        total_real_probability = math.exp(total_real_probability)
+        total_real_probabilities[headline] = total_real_probability
+        
+        total_fake_probability = 0
+        for probability in probabilities_fake:
+            total_fake_probability = total_fake_probability + math.log(probability)
+        total_fake_probability = math.exp(total_fake_probability)
+        total_fake_probabilities[headline] = total_fake_probability
+
+            
+        
+    
 
     ## Part 7
     rd.seed(0)          #numpy randomness used internally of sklearn.tree
