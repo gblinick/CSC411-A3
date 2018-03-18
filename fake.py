@@ -4,11 +4,12 @@ import numpy as np
 from numpy import random as rd
 import matplotlib.pyplot as plt
 import math
+import time
 from sklearn import tree
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 #import graphviz
 
-#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 
 def get_data(filename):
@@ -36,7 +37,7 @@ def get_stats(lines, output='dict'):
 
 def get_count(lines, output='dict'):
     ''' return a dictionary, where every word that appears in a headline in lines
-    is a key, with value equal to count(word)/number of headlines'''
+    is a key, with value equal to count(word)'''
     dict = {}
     for line in lines:
         words = list(set( line.split(' ') )) #converting to set and back to a list removes duplicates
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     fake_stats = get_stats(fake_lines) #compute probabilities for each word
     real_stats = get_stats(real_lines)
     fake_stats, real_stats = all_words(fake_stats, real_stats) #add missing words to each dict
-   
+    '''
     #   Top 10 keywords by percentage
     fake_keywords = top_keywords(fake_stats, 10)
     real_keywords = top_keywords(real_stats, 10)
@@ -132,27 +133,26 @@ if __name__ == "__main__":
 
     #   Divide datasets
     training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines, real_lines)
-    tr = get_stats(training_set)
-    va = get_stats(validation_set)
-    te = get_stats(testing_set)
-
+    #tr = get_stats(training_set)
+    #va = get_stats(validation_set)
+    #te = get_stats(testing_set)
+    '''
 
 
     ## Part 2
     p_fake = len(fake_lines)/(len(fake_lines) + len(real_lines))
     p_real = len(real_lines)/(len(fake_lines) + len(real_lines))
     
-    # p(word|real) = the percentage for that word in real_stats
-    # what we want is p(real|words in headline).
-    # this is equal to p(words in headline|real)*p(real), divided by
-    # p(words in headline|real)*p(real) + p(words in headline|fake)*p(fake)
-    # We already have p(real) and p(fake) from above, so we just need to find
-    # p(words in headline|real) and p(words in headline|fake)
-    # p(words in headline|real) is equal to count(word & real) + mp
-    # divded by count(real) + m.
-    # So we need to choose values for m and p and then come up with a
-    # dictionaries of the adjusted probabilities.
-    
+        # p(word|real) = the percentage for that word in real_stats
+        # what we want is p(real|words in headline).
+        # this is equal to p(words in headline|real)*p(real), divided by
+        #   p(words in headline|real)*p(real) + p(words in headline|fake)*p(fake)
+        # We already have p(real) and p(fake) from above, so we just need to find
+        # p(words in headline|real) and p(words in headline|fake)
+        # p(words in headline|real) is equal to count(word & real) + mp
+        # divded by count(real) + m.
+        # So we need to choose values for m and p and then come up with a
+        # dictionaries of the adjusted probabilities.
     
     all_words = list(real_stats.keys())
     
@@ -164,40 +164,36 @@ if __name__ == "__main__":
 
     missing = { x:0 for x in fake_counts.keys() if x not in real_counts.keys() }
     real_counts.update( missing )
-    
     missing = { x:0 for x in real_counts.keys() if x not in fake_counts.keys() }
     fake_counts.update( missing )
     
     
-    
-    adjusted_fake_counts = {}
-    adjusted_real_counts = {}
-    
+    adjusted_fake_counts = {} 
+    adjusted_real_counts = {} 
     
     for word in all_words:
         adjusted_fake_counts[word] = fake_counts[word] + m*p
         adjusted_real_counts[word] = real_counts[word] + m*p
-    
+        
     naive_divisor = len(all_words) + m
-    
-    adjusted_fake_stats = {}
-    adjusted_real_stats = {}
+
+    adjusted_fake_stats = {} #P(w | fake)
+    adjusted_real_stats = {} #P(w | real)
     for word in all_words:
         adjusted_fake_stats[word] = adjusted_fake_counts[word]/naive_divisor
         adjusted_real_stats[word] = adjusted_real_counts[word]/naive_divisor
-        
-        
  
     
-    ## p(words in headline|real) and p(words in headline|fake) 
-    ## put into the dictionaries total_real_probabilities and 
-    ## total_fake_probabilities, respectively
-    probabilities_real = []
-    probabilities_fake = []
+    # p(words in headline|real) and p(words in headline|fake) 
+    # put into the dictionaries total_real_probabilities and 
+    # total_fake_probabilities, respectively
     total_real_probabilities = {}
     total_fake_probabilities = {}
     
     for headline in training_set:
+        probabilities_real = []
+        probabilities_fake = []
+        
         headline_words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
         for word in headline_words:
             probabilities_real.append(adjusted_real_stats.get(word))
@@ -208,20 +204,29 @@ if __name__ == "__main__":
             probabilities_fake.append(1 - adjusted_fake_stats.get(word))
         
         total_real_probability = 0
-        for probability in probabilities_real:
-            total_real_probability = total_real_probability + math.log(probability)
+        total_fake_probability = 0
+        for k in range(len(probabilities_real)):
+            total_real_probability = total_real_probability + math.log(probabilities_real[k])
+            total_fake_probability = total_fake_probability + math.log(probabilities_fake[k])
         total_real_probability = math.exp(total_real_probability)
         total_real_probabilities[headline] = total_real_probability
-        
-        total_fake_probability = 0
-        for probability in probabilities_fake:
-            total_fake_probability = total_fake_probability + math.log(probability)
         total_fake_probability = math.exp(total_fake_probability)
         total_fake_probabilities[headline] = total_fake_probability
 
-            
-        
+    #Compute final probabilites
+    numerator = [p_fake*x for x in total_fake_probabilities.values()]
+    denom_term2 = [p_real*x for x in total_real_probabilities.values()]
     
+    final = [numerator[i]/(numerator[i] + denom_term2[i]) for i in range(len(numerator))]
+    pred = [round(x) for x in final]
+    
+    pred = np.array(pred)
+    y_tr2 = np.array(y_tr)
+    
+    correct = len(y_tr) - np.count_nonzero(tr_result - y_tr)
+    acc = correct/len(y_tr)
+
+
 
     ## Part 7
         #note that this entire section was run with the rd.seed() in the sets() function as rd.seed(1)
