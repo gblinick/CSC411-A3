@@ -5,11 +5,15 @@ from numpy import random as rd
 import matplotlib.pyplot as plt
 import math
 import time
-#from sklearn import tree
-#from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-#import graphviz
 
-#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+import torch
+from torch.autograd import Variable
+#import nn
+
+from sklearn import tree
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 
 def get_data(filename):
@@ -56,7 +60,7 @@ def top_keywords(dict, num):
     kv = sorted( zip(vals, keys), reverse=True )[:num] #sorts both lists based on order of vals, and selects the top num results
     return kv
 
-def all_words(dict1, dict2):
+def add_words(dict1, dict2):
     missing = { x:0 for x in dict1.keys() if x not in dict2.keys() }
     dict2.update( missing )
     
@@ -244,8 +248,72 @@ def optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,
         rd.seed(0) 
         val_acc += part_2(fake_lines, real_lines, y_tr, m, p)
     return val_acc
+
+
+def train(train_x, train_y, val_x, val_y, test_x, test_y, params):
+    '''part 4'''
+    rate, no_epochs, iter = params
+    dim_x = 5833 #len(all_words)
+    dim_out = 1
     
+    dtype_float = torch.FloatTensor
+    dtype_long = torch.LongTensor
     
+    train_acc = [] #will hold data for learning curve
+    val_acc = []
+    
+    torch.manual_seed(0)
+    
+    #set up PyTorch model
+    model = torch.nn.Sequential(  torch.nn.Linear(dim_x, dim_out)  )
+    
+    model[0].weight = torch.nn.Parameter( torch.randn( model[0].weight.size() ) )
+    model[0].bias = torch.nn.Parameter( torch.randn( model[0].bias.size() ) )
+    
+    loss_fn = torch.nn.CrossEntropyLoss()     #set loss function
+    optimizer = torch.optim.Adam(model.parameters(), lr=rate) #set learning rate
+
+    for k in range(no_epochs):
+        rd.seed(k)
+        print(k)
+        batches = np.array_split( np.random.permutation(range(train_x.shape[0]))[:] , 6)
+        
+        for mini_batch in batches:
+            print('mini-batch')
+            x = Variable(torch.from_numpy(train_x[mini_batch]), requires_grad=False).type(dtype_float)
+            #y_classes = Variable(torch.from_numpy(np.argmax(train_y[mini_batch], 1)), requires_grad=False).type(dtype_long)
+            y_classes = Variable(torch.from_numpy(train_y[mini_batch]), requires_grad=False).type(dtype_long)
+            
+            for t in range(iter):
+                y_pred = model(x)
+                #loss = loss_fn(y_pred, y_classes)
+                N = len(y_classes)
+                loss = -(1/N)*(y_classes*(y_pred.log()) + (1 - y_classes)*(1 - y_pred).log()).sum()
+
+                
+                model.zero_grad()  # Zero out the previous gradient computation
+                loss.backward()    # Compute the gradient
+                optimizer.step()   # Use the gradient information to make a step
+            
+            #Get results on train set
+            x = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
+            y_pred = model(x).data.numpy()
+            train_res = np.mean( np.argmax(y_pred, 1) == np.argmax(train_y, 1) )
+            
+            #Get results on val set
+            x = Variable(torch.from_numpy(val_x), requires_grad=False).type(dtype_float)
+            y_pred = model(x).data.numpy()
+            val_res = np.mean( np.argmax(y_pred, 1) == np.argmax(val_y, 1) )
+            
+            train_acc += [train_res]
+            val_acc += [val_res]
+
+    #Get results on test set
+    x = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+    y_pred = model(x).data.numpy()
+    test_res = np.mean( np.argmax(y_pred, 1) == np.argmax(test_y, 1) )
+    
+    return train_acc, val_acc, test_res, model
 
 
 if __name__ == "__main__":
@@ -257,7 +325,7 @@ if __name__ == "__main__":
     #   Get probabilities 
     fake_stats = get_stats(fake_lines) #compute probabilities for each word
     real_stats = get_stats(real_lines)
-    fake_stats, real_stats = all_words(fake_stats, real_stats) #add missing words to each dict
+    fake_stats, real_stats = add_words(fake_stats, real_stats) #add missing words to each dict
 
     #   Top 10 keywords by percentage
     fake_keywords = top_keywords(fake_stats, 10)
@@ -279,7 +347,37 @@ if __name__ == "__main__":
     # find the best m,p
     m_s = [1/(1*5833), 1/(2*5833),1/(3*5833), 1/(4*5833)]
     p_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
-    val_acc = optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s)
+    #val_acc = optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s)
+
+
+    ## Part 4
+    all_words = list( fake_stats.keys() )
+    all_words.sort()
+    train_x = np.array( dict_to_vec(all_words, training_set) )
+    train_y = np.array( y_tr.copy() )
+    
+    val_x = np.array( dict_to_vec(all_words, validation_set) )
+    val_y = np.array( y_va.copy() )
+    
+    test_x = np.array( dict_to_vec(all_words, testing_set) )
+    test_y = np.array( y_te.copy() )
+    
+    #X = Variable(X)
+    #Y = Variable(Y)
+    
+    #model = torch.nn.Sequential()
+    dim_out = 1
+    #model.add_module("linear", torch.nn.Linear( len(all_words), output_dim, bias=True))
+    #loss = torch.nn.CrossEntropyLoss(size_average=True)
+    
+    params = (1e-3, 1, 100)
+    
+    a = train(train_x, train_y, val_x, val_y, test_x, test_y, params)
+
+
+    
+    
+
 
     ## Part 7
         #note that this entire section was run with the rd.seed() in the sets() function as rd.seed(1)
