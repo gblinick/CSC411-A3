@@ -107,10 +107,37 @@ def dict_to_vec(all_words, lines):
         X += [x]
     return X
 
-def mutual_info(Y, x):
-    #I(Y, x) = H(x) - H(x, Y) = H(Y) - H(Y,x)
-    #H(Y) = Prob(Y) - sum[ ]
-    pass
+def mutual_info(word, y):
+    count_word = 0 #number of headlines with word in training set
+    lines_with_word = []
+    lines_without_word = []
+    for k in range(len(training_set)):
+        if word in training_set[k]:
+            count_word += 1
+            lines_with_word += [k]
+        else:
+            lines_without_word += [k]
+    prob_word = count_word/len(training_set)
+    
+    y_with = np.array( [y[i] for i in lines_with_word] )
+    y_without = np.array( [y[i] for i in lines_without_word] )
+    
+    prob_fake = np.count_nonzero(y)/len(y)
+    H = prob_fake*np.log(prob_fake) + (1 - prob_fake)*np.log(1 - prob_fake) #entropy before split
+    H = - H/np.log(2) #convert to base 2, and apply negative
+    
+    prob_fake_with = np.count_nonzero(y_with)/len(y_with)
+    Hy = prob_fake_with*np.log(prob_fake_with) + (1 - prob_fake_with)*np.log(1 - prob_fake_with) 
+    Hy = - Hy/np.log(2) #entropy of headlines with word
+    
+    prob_fake_without = np.count_nonzero(y_without)/len(y_without)
+    Hn = prob_fake_without*np.log(prob_fake_without) + (1 - prob_fake_without)*np.log(1 - prob_fake_without) 
+    Hn = - Hn/np.log(2)  #entropy of headlines without word
+    
+    I = H - (Hy*len(y_with) + Hn*len(y_without) )/len(y)
+    return I
+
+
 
 def part_2(fake_lines, real_lines, y_tr, m, p):
     p_fake = len(fake_lines)/(len(fake_lines) + len(real_lines))
@@ -260,9 +287,10 @@ if __name__ == "__main__":
     max_depths = [2, 3, 5, 10, 15, 20, 35, 50, 75, 100, None]
     max_feats = [3, 10, 15, None] #max_features
     all_words = list( fake_stats.keys() )
-    stp_wrds=False #include stop words
+    stp_wrds=True #True -> includes stop words
     if not stp_wrds:
         all_words = [x for x in all_words if x not in ENGLISH_STOP_WORDS]
+    split_cond = 'entropy' # or 'gini'
     
     X = dict_to_vec(all_words, training_set)
     Y = y_tr.copy()
@@ -278,13 +306,13 @@ if __name__ == "__main__":
         va_res = []
         te_res = []
         for dep in max_depths:
-            clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=dep, max_features=max_feat)
+            clf = tree.DecisionTreeClassifier(criterion=split_cond, max_depth=dep, max_features=max_feat)
                 #X = [[0, 0], [1, 1], [3,2] ] #replace these with actual training data
                 #Y = [0, 1,1]
             clf.fit(X,Y)
             
-            info = 'max_dep='+str(dep) + '_max_features='+str(max_feat) + 'stop_words='+str(stp_wrds) #label for filename with info on parameters used
-            dot_data = tree.export_graphviz(clf, out_file='resources/part7/'+info+'.dot' )
+            info = '_splitCondition='+str(split_cond) + '_maxFeatures='+str(max_feat) + '_stopWords='+str(stp_wrds) #label for filename with info on parameters used
+            dot_data = tree.export_graphviz(clf, out_file='resources/part7/tree_data/max_dep='+str(dep)+info+'.dot' )
                 #use http://webgraphviz.com/ to generate graphic from this file
             
             tr_result = clf.predict(X) #get accuracy on training set
@@ -296,7 +324,8 @@ if __name__ == "__main__":
             te_result = clf.predict(x_te) #on testing set
             correct = len(y_te) - np.count_nonzero(te_result - y_te) 
             te_res += [ correct/len(y_te) ] 
-        filename = 'part7a_max_features='+str(max_feat)+'stop_words='+str(stp_wrds)+'.jpg'
+        
+        filename = 'resources/part7/part7a'+info+'.jpg'
         e = len(max_depths) - 1
         plt.scatter(max_depths[:e], tr_res[:e], label='Training Data')
         plt.scatter(max_depths[:e], va_res[:e], label='Validation Data')
@@ -306,18 +335,17 @@ if __name__ == "__main__":
         plt.ylabel('accuracy')
         plt.legend()
         #plt.show()
-        plt.savefig('resources/' + filename)
+        plt.savefig(filename)
         plt.close()
+
+
+    ## Part 8    
+    word = 'donald'
+    I = mutual_info(word, y_tr)
+
+    index = rd.randint(0, len(all_words) )
+    word = all_words[index]
+    I = mutual_info(word, y_tr)
     
+
     
-    
-    '''
-    if False: #graphviz doesn't work
-        from sklearn.datasets import load_iris
-        iris = load_iris()
-        clf = tree.DecisionTreeClassifier()
-        clf = clf.fit(iris.data, iris.target)
-        dot_data = tree.export_graphviz(clf, out_file='test.dot') 
-        graph = graphviz.Source(dot_data) 
-        graph.render() 
-    '''
