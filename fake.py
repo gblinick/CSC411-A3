@@ -5,11 +5,11 @@ from numpy import random as rd
 import matplotlib.pyplot as plt
 import math
 import time
-from sklearn import tree
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+#from sklearn import tree
+#from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 #import graphviz
 
-os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 
 def get_data(filename):
@@ -139,31 +139,7 @@ def mutual_info(word, y):
 
 
 
-if __name__ == "__main__":
-    
-    ## Part 1
-    #   Get data
-    fake_lines = get_data('resources/clean_fake.txt') #Get list containing headlines
-    real_lines = get_data('resources/clean_real.txt')
-    #   Get probabilities 
-    fake_stats = get_stats(fake_lines) #compute probabilities for each word
-    real_stats = get_stats(real_lines)
-    fake_stats, real_stats = all_words(fake_stats, real_stats) #add missing words to each dict
-    
-    #   Top 10 keywords by percentage
-    fake_keywords = top_keywords(fake_stats, 10)
-    real_keywords = top_keywords(real_stats, 10)
-    #   Top differences by percentage
-    fake_minus_real_top = part_1(fake_stats, real_stats)
-    real_minus_fake_top = part_1(real_stats, fake_stats)
-
-    #   Divide datasets
-    training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines, real_lines)
-
-    
-
-
-    ## Part 2
+def part_2(fake_lines, real_lines, y_tr, m, p):
     p_fake = len(fake_lines)/(len(fake_lines) + len(real_lines))
     p_real = len(real_lines)/(len(fake_lines) + len(real_lines))
     
@@ -173,18 +149,18 @@ if __name__ == "__main__":
         #   p(words in headline|real)*p(real) + p(words in headline|fake)*p(fake)
         # We already have p(real) and p(fake) from above, so we just need to find
         # p(words in headline|real) and p(words in headline|fake)
-        # p(words in headline|real) is equal to count(word & real) + mp
+        # p(word in headline|real) is equal to count(word & real) + mp
         # divded by count(real) + m.
         # So we need to choose values for m and p and then come up with a
         # dictionaries of the adjusted probabilities.
     
-    all_words = list(real_stats.keys())
-    
-    p = 1/(2*5833) #2 classes and 5833 words leads to 1 example per word per class
-    m = 2*5833
     
     fake_counts = get_count(fake_lines) 
     real_counts = get_count(real_lines)
+
+    training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines, real_lines)
+    all_words = list(real_counts.keys())
+    
 
     missing = { x:0 for x in fake_counts.keys() if x not in real_counts.keys() }
     real_counts.update( missing )
@@ -215,6 +191,9 @@ if __name__ == "__main__":
     total_fake_probabilities = {}
     
     for headline in training_set:
+        if len(total_real_probabilities)%200 == 0:
+            print(len(total_real_probabilities))
+            print(m,p)
         probabilities_real = []
         probabilities_fake = []
         
@@ -238,19 +217,69 @@ if __name__ == "__main__":
         total_fake_probabilities[headline] = total_fake_probability
 
     #Compute final probabilites
-    numerator = [p_fake*x for x in total_fake_probabilities.values()]
-    denom_term2 = [p_real*x for x in total_real_probabilities.values()]
+    numerator_fake = [p_fake*x for x in total_fake_probabilities.values()]
+    numerator_real = [p_real*x for x in total_real_probabilities.values()]
     
-    final = [numerator[i]/(numerator[i] + denom_term2[i]) for i in range(len(numerator))]
-    pred = [round(x) for x in final]
+    final_fake = [numerator_fake[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_fake))]
+    final_real = [numerator_real[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_real))]
+
+    pred_fake = [round(x) for x in final_fake]
+    pred_real= [round(x) for x in final_real]
     
-    pred = np.array(pred)
+    pred_fake = np.array(pred_fake)
+    pred_real = np.array(pred_real)
     y_tr2 = np.array(y_tr)
     
-    correct = len(y_tr) - np.count_nonzero(tr_result - y_tr)
-    acc = correct/len(y_tr)
+    correct_fake = len(y_tr) - np.count_nonzero(pred_fake - y_tr2)
+    correct_real = len(y_tr) - np.count_nonzero(pred_real - y_tr2)
+
+    acc_fake = correct_fake/len(y_tr)
+    return acc_fake
+
+def optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s):
+    val_acc = []
+    k = 0
+    for m,p in m_s,p_s:
+        k += 1
+        rd.seed(0) 
+        val_acc += part_2(fake_lines, real_lines, y_tr, m, p)
+    return val_acc
+    
+    
 
 
+if __name__ == "__main__":
+    
+    ## Part 1
+    #   Get data
+    fake_lines = get_data('resources/clean_fake.txt') #Get list containing headlines
+    real_lines = get_data('resources/clean_real.txt')
+    #   Get probabilities 
+    fake_stats = get_stats(fake_lines) #compute probabilities for each word
+    real_stats = get_stats(real_lines)
+    fake_stats, real_stats = all_words(fake_stats, real_stats) #add missing words to each dict
+
+    #   Top 10 keywords by percentage
+    fake_keywords = top_keywords(fake_stats, 10)
+    real_keywords = top_keywords(real_stats, 10)
+    #   Top differences by percentage
+    fake_minus_real_top = part_1(fake_stats, real_stats)
+    real_minus_fake_top = part_1(real_stats, fake_stats)
+
+    #   Divide datasets
+    training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines, real_lines)
+    tr = get_stats(training_set)
+    va = get_stats(validation_set)
+    te = get_stats(testing_set)
+    
+
+
+    ## Part 2
+
+    # find the best m,p
+    m_s = [1/(1*5833), 1/(2*5833),1/(3*5833), 1/(4*5833)]
+    p_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
+    val_acc = optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s)
 
     ## Part 7
         #note that this entire section was run with the rd.seed() in the sets() function as rd.seed(1)
