@@ -107,10 +107,7 @@ def dict_to_vec(all_words, lines):
         X += [x]
     return X
 
-def mutual_info(Y, x):
-    #I(Y, x) = H(x) - H(x, Y) = H(Y) - H(Y,x)
-    #H(Y) = Prob(Y) - sum[ ]
-    pass
+
 
 
 if __name__ == "__main__":
@@ -234,9 +231,10 @@ if __name__ == "__main__":
     max_depths = [2, 3, 5, 10, 15, 20, 35, 50, 75, 100, None]
     max_feats = [3, 10, 15, None] #max_features
     all_words = list( fake_stats.keys() )
-    stp_wrds=False #include stop words
+    stp_wrds=True #True -> includes stop words
     if not stp_wrds:
         all_words = [x for x in all_words if x not in ENGLISH_STOP_WORDS]
+    split_cond = 'gini' #or 'gini'
     
     X = dict_to_vec(all_words, training_set)
     Y = y_tr.copy()
@@ -252,13 +250,13 @@ if __name__ == "__main__":
         va_res = []
         te_res = []
         for dep in max_depths:
-            clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=dep, max_features=max_feat)
+            clf = tree.DecisionTreeClassifier(criterion=split_cond, max_depth=dep, max_features=max_feat)
                 #X = [[0, 0], [1, 1], [3,2] ] #replace these with actual training data
                 #Y = [0, 1,1]
             clf.fit(X,Y)
             
-            info = 'max_dep='+str(dep) + '_max_features='+str(max_feat) + 'stop_words='+str(stp_wrds) #label for filename with info on parameters used
-            dot_data = tree.export_graphviz(clf, out_file='resources/part7/'+info+'.dot' )
+            info = '_splitCondition='+str(split_cond) + '_maxFeatures='+str(max_feat) + '_stopWords='+str(stp_wrds) #label for filename with info on parameters used
+            dot_data = tree.export_graphviz(clf, out_file='resources/part7/tree_data/max_dep='+str(dep)+info+'.dot' )
                 #use http://webgraphviz.com/ to generate graphic from this file
             
             tr_result = clf.predict(X) #get accuracy on training set
@@ -270,7 +268,8 @@ if __name__ == "__main__":
             te_result = clf.predict(x_te) #on testing set
             correct = len(y_te) - np.count_nonzero(te_result - y_te) 
             te_res += [ correct/len(y_te) ] 
-        filename = 'part7a_max_features='+str(max_feat)+'stop_words='+str(stp_wrds)+'.jpg'
+        
+        filename = 'resources/part7/part7a'+info+'.jpg'
         e = len(max_depths) - 1
         plt.scatter(max_depths[:e], tr_res[:e], label='Training Data')
         plt.scatter(max_depths[:e], va_res[:e], label='Validation Data')
@@ -280,18 +279,10 @@ if __name__ == "__main__":
         plt.ylabel('accuracy')
         plt.legend()
         #plt.show()
-        plt.savefig('resources/' + filename)
+        plt.savefig(filename)
         plt.close()
+
+    ## Part 8
     
     
     
-    '''
-    if False: #graphviz doesn't work
-        from sklearn.datasets import load_iris
-        iris = load_iris()
-        clf = tree.DecisionTreeClassifier()
-        clf = clf.fit(iris.data, iris.target)
-        dot_data = tree.export_graphviz(clf, out_file='test.dot') 
-        graph = graphviz.Source(dot_data) 
-        graph.render() 
-    '''
