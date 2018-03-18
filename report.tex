@@ -151,7 +151,9 @@ Both datasets (real and fake) contain headlines about U.S. President Donald Trum
    double appearance), `the' (81), `hillary' (44), and `trump' (3). The exact same process of training was run
    ignoring stop words, but results were slightly worse; graphs similar to those mentioned above can be found
    in the \texttt{resources} directory (each filename indicates whether stop words were included, as well as info
-   on the other non-default parameters).
+   on the other non-default parameters). Note that because of the use of dictionaries (i.e. because
+   \texttt{dict.keys()} does not keep track of order), running the code again may result in different indices
+   for each of the above words.
 
    A visualization of the entire tree is saves as \texttt{part7b_all.pdf}
    in the \texttt{resources} directory; the text represenations of many trees that were generated during
@@ -164,7 +166,7 @@ Both datasets (real and fake) contain headlines about U.S. President Donald Trum
    \section{Information Theory}
    \subsection{Mutual Information on First Split}
    Using the result from part 7, the word that produced the best initial split was `donald'. The mutual information
-   (a measure of `information gain') on that split can be calculated by
+   (a measure of `information gain') on that split (on the training data) can be calculated by
    \begin{equation*} \begin{split}
       I(Y, x)  &= H(x) - H(x, Y) = H(Y) - H(Y,x)
    \end{split} \end{equation*}
@@ -174,17 +176,57 @@ Both datasets (real and fake) contain headlines about U.S. President Donald Trum
    \begin{equation*} \begin{split}
       I(Y, x)  &= H(Y) - H(Y,x) \\
                &= 0.969 - \bigg[ P_1 (1) + P_2 (0.722)  \bigg] \\
-               &= 0.969 - \bigg[ \frac{1378}{2287} (1) + \frac{909}{2287} (0.722)  \bigg] \\
-               &= 0.0795
+               &= 0.969 - \bigg[ \frac{1557}{2287} (1) + \frac{730}{2287} (0.722)  \bigg] \\
+               &= 0.0557
    \end{split} \end{equation*}
    where $x = `donald'$ and $Y$ indicates whether a headline is real or fake.
 
+   A function \texttt{mutual_info()} was written to check this result, and to calculate the mutual
+   information for other possible splits. The code for this function is shown below; it gave a result
+   of 0.58 for $x = `donald'$.
+
+      \begin{lstlisting}[language=Python]
+
+         def mutual_info(word, y):
+             count_word = 0 #number of headlines with word in training set
+             lines_with_word = []
+             lines_without_word = []
+             for k in range(len(training_set)):
+                 if word in training_set[k]:
+                     count_word += 1
+                     lines_with_word += [k]
+                 else:
+                     lines_without_word += [k]
+             prob_word = count_word/len(training_set)
+
+             y_with = np.array( [y[i] for i in lines_with_word] )
+             y_without = np.array( [y[i] for i in lines_without_word] )
+
+             prob_fake = np.count_nonzero(y)/len(y)
+             H = prob_fake*np.log(prob_fake) + (1 - prob_fake)*np.log(1 - prob_fake) #entropy before split
+             H = - H/np.log(2) #convert to base 2, and apply negative
+
+             prob_fake_with = np.count_nonzero(y_with)/len(y_with)
+             Hy = prob_fake_with*np.log(prob_fake_with) + (1 - prob_fake_with)*np.log(1 - prob_fake_with)
+             Hy = - Hy/np.log(2) #entropy of headlines with word
+
+             prob_fake_without = np.count_nonzero(y_without)/len(y_without)
+             Hn = prob_fake_without*np.log(prob_fake_without) + (1 - prob_fake_without)*np.log(1 - prob_fake_without)
+             Hn = - Hn/np.log(2)  #entropy of headlines without word
+
+             I = H - (Hy*len(y_with) + Hn*len(y_without) )/len(y)
+             return I
+      \end{lstlisting}
+
+
+
    \subsection{Mutual Information on Later Split}
-   The same procedure can be followed to compute the mutual information on a split later in the decision
-   tree. Choosing the split that appears first in the fifth row of the full graph of the tree gives
-   \begin{equation*} \begin{split}
-      I(Y, x)  &= H - \bigg[ \frac{}{} () + \frac{}{} ()  \bigg] \\
-               &=
-   \end{split} \end{equation*}
+   The same procedure can be followed to compute the mutual information for a split on another word.
+   Choosing a word randomly, gave a value of 0.0013 for the mutual information of a split of the training
+   set on the word `ways'. As expected, this value is lower than the mutual information for a split on the
+   word `donald' - that word was chosen as the first split precisely because it gave the most information
+   about whether a headline was real or fake.
+
+
 
 \end{document}

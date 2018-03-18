@@ -107,6 +107,35 @@ def dict_to_vec(all_words, lines):
         X += [x]
     return X
 
+def mutual_info(word, y):
+    count_word = 0 #number of headlines with word in training set
+    lines_with_word = []
+    lines_without_word = []
+    for k in range(len(training_set)):
+        if word in training_set[k]:
+            count_word += 1
+            lines_with_word += [k]
+        else:
+            lines_without_word += [k]
+    prob_word = count_word/len(training_set)
+    
+    y_with = np.array( [y[i] for i in lines_with_word] )
+    y_without = np.array( [y[i] for i in lines_without_word] )
+    
+    prob_fake = np.count_nonzero(y)/len(y)
+    H = prob_fake*np.log(prob_fake) + (1 - prob_fake)*np.log(1 - prob_fake) #entropy before split
+    H = - H/np.log(2) #convert to base 2, and apply negative
+    
+    prob_fake_with = np.count_nonzero(y_with)/len(y_with)
+    Hy = prob_fake_with*np.log(prob_fake_with) + (1 - prob_fake_with)*np.log(1 - prob_fake_with) 
+    Hy = - Hy/np.log(2) #entropy of headlines with word
+    
+    prob_fake_without = np.count_nonzero(y_without)/len(y_without)
+    Hn = prob_fake_without*np.log(prob_fake_without) + (1 - prob_fake_without)*np.log(1 - prob_fake_without) 
+    Hn = - Hn/np.log(2)  #entropy of headlines without word
+    
+    I = H - (Hy*len(y_with) + Hn*len(y_without) )/len(y)
+    return I
 
 
 
@@ -120,7 +149,7 @@ if __name__ == "__main__":
     fake_stats = get_stats(fake_lines) #compute probabilities for each word
     real_stats = get_stats(real_lines)
     fake_stats, real_stats = all_words(fake_stats, real_stats) #add missing words to each dict
-    '''
+    
     #   Top 10 keywords by percentage
     fake_keywords = top_keywords(fake_stats, 10)
     real_keywords = top_keywords(real_stats, 10)
@@ -130,10 +159,8 @@ if __name__ == "__main__":
 
     #   Divide datasets
     training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines, real_lines)
-    #tr = get_stats(training_set)
-    #va = get_stats(validation_set)
-    #te = get_stats(testing_set)
-    '''
+
+    
 
 
     ## Part 2
@@ -234,7 +261,7 @@ if __name__ == "__main__":
     stp_wrds=True #True -> includes stop words
     if not stp_wrds:
         all_words = [x for x in all_words if x not in ENGLISH_STOP_WORDS]
-    split_cond = 'gini' #or 'gini'
+    split_cond = 'entropy' # or 'gini'
     
     X = dict_to_vec(all_words, training_set)
     Y = y_tr.copy()
@@ -282,7 +309,14 @@ if __name__ == "__main__":
         plt.savefig(filename)
         plt.close()
 
-    ## Part 8
+
+    ## Part 8    
+    word = 'donald'
+    I = mutual_info(word, y_tr)
+
+    index = rd.randint(0, len(all_words) )
+    word = all_words[index]
+    I = mutual_info(word, y_tr)
     
-    
+
     
