@@ -249,90 +249,24 @@ def optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,
         val_acc += part_2(fake_lines, real_lines, y_tr, m, p)
     return val_acc
 
-'''
-def train(train_x, train_y, val_x, val_y, test_x, test_y, params): #part 4
-    rate, no_epochs, iter = params
-    dim_x = 5833 #len(all_words)
-    dim_out = 1
-    
-    dtype_float = torch.FloatTensor
-    dtype_long = torch.LongTensor
-    
-    train_acc = [] #will hold data for learning curve
-    val_acc = []
-    
-    torch.manual_seed(0)
-    
-    #set up PyTorch model
-    model = torch.nn.Sequential(  torch.nn.Linear(dim_x, dim_out)  )
-    
-    model[0].weight = torch.nn.Parameter( torch.randn( model[0].weight.size() ) )
-    model[0].bias = torch.nn.Parameter( torch.randn( model[0].bias.size() ) )
-    
-    loss_fn = torch.nn.CrossEntropyLoss()     #set loss function
-    loss_fn = torch.nn.NLLLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=rate) #set learning rate
-
-    for k in range(no_epochs):
-        rd.seed(k)
-        print(k)
-        batches = np.array_split( np.random.permutation(range(train_x.shape[0]))[:] , 6)
-        
-        for mini_batch in batches:
-            print('mini-batch')
-            x = Variable(torch.from_numpy(train_x[mini_batch]), requires_grad=False).type(dtype_float)
-            #y_classes = Variable(torch.from_numpy(np.argmax(train_y[mini_batch], 1)), requires_grad=False).type(dtype_long)
-            y_classes = Variable(torch.from_numpy(train_y[mini_batch]), requires_grad=False).type(dtype_long)
-            
-            for t in range(iter):
-                y_pred = model(x)
-                loss = loss_fn(y_pred, y_classes)
-                #N = len(y_classes)
-                #loss = -(1/N)*(y_classes*(y_pred.log()) + (1 - y_classes)*(1 - y_pred).log()).sum()
-
-                
-                model.zero_grad()  # Zero out the previous gradient computation
-                loss.backward()    # Compute the gradient
-                optimizer.step()   # Use the gradient information to make a step
-            
-            #Get results on train set
-            x = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
-            y_pred = model(x).data.numpy()
-            train_res = np.mean( np.argmax(y_pred, 1) == np.argmax(train_y, 1) )
-            
-            #Get results on val set
-            x = Variable(torch.from_numpy(val_x), requires_grad=False).type(dtype_float)
-            y_pred = model(x).data.numpy()
-            val_res = np.mean( np.argmax(y_pred, 1) == np.argmax(val_y, 1) )
-            
-            train_acc += [train_res]
-            val_acc += [val_res]
-
-    #Get results on test set
-    x = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-    y_pred = model(x).data.numpy()
-    test_res = np.mean( np.argmax(y_pred, 1) == np.argmax(test_y, 1) )
-    
-    return train_acc, val_acc, test_res, model
-'''
-
-
 def forward(theta, x_train):
+    '''Logistic Regression forward pass'''
     o = np.dot(x_train, theta)
     return softmax(o)
     
 def softmax(y):
-    #return np.exp(y)/np.tile(np.sum(np.exp(y),0), (len(y),1))
+    '''apply softmax pointwise'''
     return 1/(1 + np.exp(-y) )
 
 def NLL(y_, y): 
     #y is output of network, y_ is correct results
     return -np.sum(y_*np.log(y))
 
-def grad(y_, y, x, gamma, theta): #Part 3b
-    diff = (y - y_) #y is output of softmax
-    grad_W = np.sum( (x.T)*diff, 1)  - gamma*(theta)/np.linalg.norm(theta)
-    return  grad_W
+def grad(y_, y, x, gamma, theta): 
+    '''compute gradient'''
+    diff = (y - y_) #y is output of network
+    grad_theta = np.sum( (x.T)*diff, 1)  - gamma*(theta)/np.linalg.norm(theta)
+    return  grad_theta
 
 
 if __name__ == "__main__":
@@ -366,34 +300,20 @@ if __name__ == "__main__":
     # find the best m,p
     m_s = [1/(1*5833), 1/(2*5833),1/(3*5833), 1/(4*5833)]
     p_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
-    #val_acc = optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s)
+    val_acc = optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s)
 
 
     ## Part 4
     all_words = list( fake_stats.keys() )
     all_words.sort()
+    
     train_x = np.array( dict_to_vec(all_words, training_set) )
     train_y = np.array( y_tr.copy() )
-    
     val_x = np.array( dict_to_vec(all_words, validation_set) )
     val_y = np.array( y_va.copy() )
-
     test_x = np.array( dict_to_vec(all_words, testing_set) )
     test_y = np.array( y_te.copy() )
     
-    '''
-    #X = Variable(X)
-    #Y = Variable(Y)
-    
-    #model = torch.nn.Sequential()
-    dim_out = 1
-    #model.add_module("linear", torch.nn.Linear( len(all_words), output_dim, bias=True))
-    #loss = torch.nn.CrossEntropyLoss(size_average=True)
-    
-    params = (1e-3, 1, 100)
-    a = train(train_x, train_y, val_x, val_y, test_x, test_y, params)
-    '''
-
     rates = [1e-3, 1e-4]
     gammas = [0, 0.1, 0.2, 0.5, 1, 5]
     max_iter = 1000
@@ -408,7 +328,8 @@ if __name__ == "__main__":
             test_acc = []
             iter = 0
             print('Starting Training with: rate = ' + str(rate) + ' and gamma = ' + str(gamma) )
-            while iter < max_iter:
+            
+            while iter < max_iter: #Train
                 iter += 1
                 y = forward(theta, train_x)
                 theta = theta - rate*grad(train_y, y, train_x, gamma, theta)
@@ -419,6 +340,8 @@ if __name__ == "__main__":
                     val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
                     test_pred = forward(theta, test_x)
                     test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
+            
+            # Add final accuracies
             y = forward(theta, train_x)
             train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
             val_pred = forward(theta, val_x)
@@ -426,7 +349,8 @@ if __name__ == "__main__":
             test_pred = forward(theta, test_x)
             test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
             iterations += [iter]
-        
+            
+            #Plot learning curve
             info = '_lr='+str(rate) + '_gamma='+str(gamma)
             filename = 'resources/part4/'+info+'.jpg'
             plt.scatter(iterations, train_acc, label='Training Data')
