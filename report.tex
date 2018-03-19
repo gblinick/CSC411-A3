@@ -234,16 +234,17 @@ def check_accuracy(final_fake, y):
 \end{enumerate}
 
 In choosing our parameters m and p for the model, we began with a value of m = $2 \cdot 5833 $ and $ \dfrac {1}{2 \cdot 5833}$ and optimized from there. This was chosen as our starting point because as mentioned on Piazza, it allows for
-1 example per class per word and is intuitive. We then chose 4 different values of m and p and tested how they perform on our validation set, via a function called "optimize\_mp". Our optimal m and p values were found to be 1 and 5833, respectively, achieving an acuracy on the validation set of 83.7\%. 
+1 example per class per word and is intuitive. We then chose 4 different values of m and p and tested how they perform on our validation set, via a function called "optimize\_mp". Our optimal m and p values were found to not matter so much,as long as they weren't 
+$ \dfrac {1}{1 \cdot 5833}$ and 5833, respectively. If we chose higher values for m and corresponding lower values for p, we achieved an acuracy on the validation set of 91.3\%. 
 \begin{center}
 \begin{tabular}{ |c|c| } 
  \hline
  m & accuracy \\ [0.5ex] 
 \hline \hline
- 5833 & 83.7\% \\ 
- $2 \cdot 5833$ & 83.1\% \\ 
- $3 \cdot 5833$ & 82.9\%  \\
- $4 \cdot 5833$ & 82.7\%  \\ 
+ 5833 & 90.8\% \\ 
+ $2 \cdot 5833$ & 91.3\% \\ 
+ $3 \cdot 5833$ & 91.3\%  \\
+ $4 \cdot 5833$ & 91.3\%  \\ 
  \hline
 \end{tabular}
 \end{center}
@@ -261,7 +262,7 @@ def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
 
   \end{lstlisting}
 
-Finally, on the training set we obtained an accuracy of 83.4\% while on the testing set we achieved an accuracy of 84.5\%.
+Finally, on the training set we obtained an accuracy of 92.5\% while on the testing set we achieved an accuracy of 92.2\%.
 
    \section{Predictive Factors}
 
