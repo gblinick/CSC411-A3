@@ -137,13 +137,24 @@ def mutual_info(word, y):
     I = H - (Hy*len(y_with) + Hn*len(y_without) )/len(y)
     return I
 
-
-
-def part_2(fake_lines, real_lines, y_tr, m, p):
-    p_fake = len(fake_lines)/(len(fake_lines) + len(real_lines))
-    p_real = len(real_lines)/(len(fake_lines) + len(real_lines))
     
-        # p(word|real) = the percentage for that word in real_stats
+
+
+def training_part(fake_lines_training_set, real_lines_training_set, m, p):
+    '''Takes in a list of training set lines divided into real and fake groups.
+    Returns a list of probabilities that represent p(word|real) and p(word|fake).
+    Therefore, this list will be 5833 long to account for every word.
+    '''
+    #Part 1: Training: calculate p(real), p(fake), and p(word|real), p(word|fake)
+    fake_stats_training_set = get_stats(fake_lines_training_set) #compute probabilities for each word
+    real_stats_training_set = get_stats(real_lines_training_set)
+    
+    fake_counts_training_set = get_count(fake_lines_training_set) #compute counts for each word
+    real_counts_training_set = get_count(real_lines_training_set)
+    
+    p_fake = len(fake_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
+    p_real = len(real_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
+    
         # what we want is p(real|words in headline).
         # this is equal to p(words in headline|real)*p(real), divided by
         #   p(words in headline|real)*p(real) + p(words in headline|fake)*p(fake)
@@ -154,57 +165,59 @@ def part_2(fake_lines, real_lines, y_tr, m, p):
         # So we need to choose values for m and p and then come up with a
         # dictionaries of the adjusted probabilities.
     
+    all_words = list(real_counts_total.keys())
     
-    fake_counts = get_count(fake_lines) 
-    real_counts = get_count(real_lines)
-
-    training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines, real_lines)
-    all_words = list(real_counts.keys())
-    
-
-    missing = { x:0 for x in fake_counts.keys() if x not in real_counts.keys() }
-    real_counts.update( missing )
-    missing = { x:0 for x in real_counts.keys() if x not in fake_counts.keys() }
-    fake_counts.update( missing )
+    missing = { x:0 for x in fake_counts_total.keys() if x not in real_counts_training_set.keys() }
+    real_counts_training_set.update( missing )
+    missing = { x:0 for x in real_counts_total.keys() if x not in fake_counts_training_set.keys() }
+    fake_counts_training_set.update( missing )
     
     
-    adjusted_fake_counts = {} 
-    adjusted_real_counts = {} 
+    adjusted_fake_counts_training_set = {} 
+    adjusted_real_counts_training_set = {} 
+    
+    
     
     for word in all_words:
-        adjusted_fake_counts[word] = fake_counts[word] + m*p
-        adjusted_real_counts[word] = real_counts[word] + m*p
+        adjusted_fake_counts_training_set[word] = fake_counts_training_set[word] + mp
+        adjusted_real_counts_training_set[word] = real_counts_training_set[word] + mp
         
     naive_divisor = len(all_words) + m
 
-    adjusted_fake_stats = {} #P(w | fake)
-    adjusted_real_stats = {} #P(w | real)
-    for word in all_words:
-        adjusted_fake_stats[word] = adjusted_fake_counts[word]/naive_divisor
-        adjusted_real_stats[word] = adjusted_real_counts[word]/naive_divisor
- 
+    adjusted_fake_stats_training_set = {} #P(w | fake)
+    adjusted_real_stats_training_set = {} #P(w | real)
     
-    # p(words in headline|real) and p(words in headline|fake) 
-    # put into the dictionaries total_real_probabilities and 
-    # total_fake_probabilities, respectively
+    for word in all_words:
+        adjusted_fake_stats_training_set[word] = adjusted_fake_counts_training_set[word]/naive_divisor
+        adjusted_real_stats_training_set[word] = adjusted_real_counts_training_set[word]/naive_divisor
+    
+
+    return p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set 
+
+def evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, SET):
+    ''' Calculate p(fake|headline) for all headlines in a given set (TRAINING, TEST, VALIDATION).
+    Takes p(real), p(fake), p(word|real), p(word|fake) as parameters.'''
+
     total_real_probabilities = {}
     total_fake_probabilities = {}
     
-    for headline in training_set:
-        if len(total_real_probabilities)%200 == 0:
+    all_words = list(real_counts_total.keys())
+    
+    for headline in SET:
+        if len(total_real_probabilities)%50 == 0:
             print(len(total_real_probabilities))
-            print(m,p)
+            print(m,mp)
         probabilities_real = []
         probabilities_fake = []
         
         headline_words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
         for word in headline_words:
-            probabilities_real.append(adjusted_real_stats.get(word))
-            probabilities_fake.append(adjusted_fake_stats.get(word))
+            probabilities_real.append(adjusted_real_stats_training_set.get(word))
+            probabilities_fake.append(adjusted_fake_stats_training_set.get(word))
         non_headline_words = [x for x in all_words if x not in headline_words]
         for word in non_headline_words:
-            probabilities_real.append(1 - adjusted_real_stats.get(word))
-            probabilities_fake.append(1 - adjusted_fake_stats.get(word))
+            probabilities_real.append(1 - adjusted_real_stats_training_set.get(word))
+            probabilities_fake.append(1 - adjusted_fake_stats_training_set.get(word))
         
         total_real_probability = 0
         total_fake_probability = 0
@@ -216,6 +229,11 @@ def part_2(fake_lines, real_lines, y_tr, m, p):
         total_fake_probability = math.exp(total_fake_probability)
         total_fake_probabilities[headline] = total_fake_probability
 
+    ## At this point, we have calculated p(headline|real) and p(headline|fake) for all
+    ## headlines in whatever set we are testing
+    ## Now we need to find p(fake|headline) which means multiplying p(headline|fake) by p(fake) and 
+    ## dividing by p(headline|fake)*p(fake) + p(headline|real)*p(real) 
+
     #Compute final probabilites
     numerator_fake = [p_fake*x for x in total_fake_probabilities.values()]
     numerator_real = [p_real*x for x in total_real_probabilities.values()]
@@ -223,64 +241,104 @@ def part_2(fake_lines, real_lines, y_tr, m, p):
     final_fake = [numerator_fake[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_fake))]
     final_real = [numerator_real[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_real))]
 
-    pred_fake = [round(x) for x in final_fake]
-    pred_real= [round(x) for x in final_real]
-    
-    pred_fake = np.array(pred_fake)
-    pred_real = np.array(pred_real)
-    y_tr2 = np.array(y_tr)
-    
-    correct_fake = len(y_tr) - np.count_nonzero(pred_fake - y_tr2)
-    correct_real = len(y_tr) - np.count_nonzero(pred_real - y_tr2)
+    return final_fake, final_real
 
-    acc_fake = correct_fake/len(y_tr)
-    return acc_fake
+def check_accuracy(final_fake, y):
+    '''Given a list of fake probabilities, compare with the actual results by rounding.
+    If the fake  probability is greater than 0.5, consider it fake and if less, consider it real.
+    Output the accuracy rate'''
+    ## At this point we are done and have found p(fake|headline).
+    ## All that remains is accuracy checking
+    ## This part takes final_fake and one of y_tr, y_va, y_te as parameters
+    ## and returns a percentage value in accuracy
 
-def optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s):
-    val_acc = []
-    k = 0
-    for m,p in m_s,p_s:
-        k += 1
-        rd.seed(0) 
-        val_acc += part_2(fake_lines, real_lines, y_tr, m, p)
+    pred_fake = np.array([round(x) for x in final_fake])
+    
+    y_2 = np.array(y)
+    
+    incorrect = np.count_nonzero(pred_fake - y_2)
+    total = len(y)
+    correct = total - incorrect
+    accuracy = correct/total    
+    
+    return accuracy
+
+
+def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
+    val_acc = {}
+    for m in m_s:
+        print(m)
+        p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
+        final_fake, final_real = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
+        val_acc[m] = check_accuracy(final_fake, y_va)
     return val_acc
-    
-    
-
 
 if __name__ == "__main__":
     
     ## Part 1
     #   Get data
-    fake_lines = get_data('resources/clean_fake.txt') #Get list containing headlines
-    real_lines = get_data('resources/clean_real.txt')
+    fake_lines_total = get_data('resources/clean_fake.txt') #Get list containing headlines
+    real_lines_total = get_data('resources/clean_real.txt')
     #   Get probabilities 
-    fake_stats = get_stats(fake_lines) #compute probabilities for each word
-    real_stats = get_stats(real_lines)
-    fake_stats, real_stats = all_words(fake_stats, real_stats) #add missing words to each dict
+    fake_stats_total = get_stats(fake_lines_total) #compute probabilities for each word
+    real_stats_total = get_stats(real_lines_total)
+    fake_stats_total, real_stats_total = all_words(fake_stats_total, real_stats_total) #add missing words to each dict
+
+    #   Get counts 
+    fake_counts_total = get_count(fake_lines_total) #compute probabilities for each word
+    real_counts_total = get_count(real_lines_total)
+    fake_counts_total, real_counts_total = all_words(fake_counts_total, real_counts_total) #add missing words to each dict
 
     #   Top 10 keywords by percentage
-    fake_keywords = top_keywords(fake_stats, 10)
-    real_keywords = top_keywords(real_stats, 10)
+    fake_keywords = top_keywords(fake_stats_total, 10)
+    real_keywords = top_keywords(real_stats_total, 10)
     #   Top differences by percentage
-    fake_minus_real_top = part_1(fake_stats, real_stats)
-    real_minus_fake_top = part_1(real_stats, fake_stats)
+    fake_minus_real_top = part_1(fake_stats_total, real_stats_total)
+    real_minus_fake_top = part_1(real_stats_total, fake_stats_total)
 
     #   Divide datasets
-    training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines, real_lines)
+    training_set, validation_set, testing_set, y_tr, y_va, y_te = sets(fake_lines_total, real_lines_total)
     tr = get_stats(training_set)
     va = get_stats(validation_set)
     te = get_stats(testing_set)
     
-
+    
 
     ## Part 2
+    
+    
+    ### First, use the training set to determine p(word|real) for all words in the TOTAL set
+    ### as well as p(real) and p(false) based on just the TRAINING set.
+    rd.seed(1)
+    rd.shuffle(fake_lines_total)
+    rd.shuffle(real_lines_total)
 
+    fake_lines_training_set = fake_lines_total[:int(round(0.7*len(fake_lines_total)))]
+    real_lines_training_set = real_lines_total[:int(round(0.7*len(fake_lines_total)))]
+    
+    m = 5833
+    mp=1
+    
+    
+    
     # find the best m,p
-    m_s = [1/(1*5833), 1/(2*5833),1/(3*5833), 1/(4*5833)]
-    p_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
-    val_acc = optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,p_s)
+    mp = 1
+    #m_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
+    #val_acc = optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp)
+    
+    ## Part 1: Use TRAINING set to get p(real), p(fake), p(word|real) and p(word|fake) for ALL words
+    p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
+ 
+    ## Part 2: Calculate p(fake|headline) given a set of headlines and the parameters from the previous step.
+    final_fake_train, final_real_train = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, training_set)
+    final_fake_test, final_real_test = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, testing_set)
 
+    
+    ## Part 3: Check the accuracy of our model
+    training_accuracy = check_accuracy(final_fake_train, y_tr)
+    testing_accuracy = check_accuracy(final_fake_test, y_te)
+    
+  
     ## Part 7
         #note that this entire section was run with the rd.seed() in the sets() function as rd.seed(1)
     rd.seed(0)  #numpy randomness used internally of sklearn.tree
