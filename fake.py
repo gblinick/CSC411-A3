@@ -251,6 +251,7 @@ def check_accuracy(final_fake, y):
     ## All that remains is accuracy checking
     ## This part takes final_fake and one of y_tr, y_va, y_te as parameters
     ## and returns a percentage value in accuracy
+    ## It's back here
 
     pred_fake = np.array([round(x) for x in final_fake])
     
