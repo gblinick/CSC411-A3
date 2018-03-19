@@ -249,9 +249,8 @@ def optimize_mp(fake_lines, real_lines, training_set, validation_set, y_tr, m_s,
         val_acc += part_2(fake_lines, real_lines, y_tr, m, p)
     return val_acc
 
-
-def train(train_x, train_y, val_x, val_y, test_x, test_y, params):
-    '''part 4'''
+'''
+def train(train_x, train_y, val_x, val_y, test_x, test_y, params): #part 4
     rate, no_epochs, iter = params
     dim_x = 5833 #len(all_words)
     dim_out = 1
@@ -271,6 +270,7 @@ def train(train_x, train_y, val_x, val_y, test_x, test_y, params):
     model[0].bias = torch.nn.Parameter( torch.randn( model[0].bias.size() ) )
     
     loss_fn = torch.nn.CrossEntropyLoss()     #set loss function
+    loss_fn = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=rate) #set learning rate
 
     for k in range(no_epochs):
@@ -286,9 +286,9 @@ def train(train_x, train_y, val_x, val_y, test_x, test_y, params):
             
             for t in range(iter):
                 y_pred = model(x)
-                #loss = loss_fn(y_pred, y_classes)
-                N = len(y_classes)
-                loss = -(1/N)*(y_classes*(y_pred.log()) + (1 - y_classes)*(1 - y_pred).log()).sum()
+                loss = loss_fn(y_pred, y_classes)
+                #N = len(y_classes)
+                #loss = -(1/N)*(y_classes*(y_pred.log()) + (1 - y_classes)*(1 - y_pred).log()).sum()
 
                 
                 model.zero_grad()  # Zero out the previous gradient computation
@@ -314,6 +314,25 @@ def train(train_x, train_y, val_x, val_y, test_x, test_y, params):
     test_res = np.mean( np.argmax(y_pred, 1) == np.argmax(test_y, 1) )
     
     return train_acc, val_acc, test_res, model
+'''
+
+
+def forward(theta, x_train):
+    o = np.dot(x_train, theta)
+    return softmax(o)
+    
+def softmax(y):
+    #return np.exp(y)/np.tile(np.sum(np.exp(y),0), (len(y),1))
+    return 1/(1 + np.exp(-y) )
+
+def NLL(y_, y): 
+    #y is output of network, y_ is correct results
+    return -np.sum(y_*np.log(y))
+
+def grad(y_, y, x, gamma, theta): #Part 3b
+    diff = (y - y_) #y is output of softmax
+    grad_W = np.sum( (x.T)*diff, 1)  - gamma*(theta)/np.linalg.norm(theta)
+    return  grad_W
 
 
 if __name__ == "__main__":
@@ -358,10 +377,11 @@ if __name__ == "__main__":
     
     val_x = np.array( dict_to_vec(all_words, validation_set) )
     val_y = np.array( y_va.copy() )
-    
+
     test_x = np.array( dict_to_vec(all_words, testing_set) )
     test_y = np.array( y_te.copy() )
     
+    '''
     #X = Variable(X)
     #Y = Variable(Y)
     
@@ -371,12 +391,54 @@ if __name__ == "__main__":
     #loss = torch.nn.CrossEntropyLoss(size_average=True)
     
     params = (1e-3, 1, 100)
-    
     a = train(train_x, train_y, val_x, val_y, test_x, test_y, params)
+    '''
 
-
-    
-    
+    rates = [1e-3, 1e-4]
+    gammas = [0, 0.1, 0.2, 0.5, 1, 5]
+    max_iter = 1000
+    for rate in rates:
+        for gamma in gammas:
+            rd.seed(0)
+            theta = rd.rand( len(all_words) )
+            theta = theta - 0.5
+            train_acc = []
+            iterations = [] #for storing x-axis data for plotting
+            val_acc = []
+            test_acc = []
+            iter = 0
+            print('Starting Training with: rate = ' + str(rate) + ' and gamma = ' + str(gamma) )
+            while iter < max_iter:
+                iter += 1
+                y = forward(theta, train_x)
+                theta = theta - rate*grad(train_y, y, train_x, gamma, theta)
+                if iter%50 == 0:
+                    iterations += [iter]
+                    train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
+                    val_pred = forward(theta, val_x)
+                    val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
+                    test_pred = forward(theta, test_x)
+                    test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
+            y = forward(theta, train_x)
+            train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
+            val_pred = forward(theta, val_x)
+            val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
+            test_pred = forward(theta, test_x)
+            test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
+            iterations += [iter]
+        
+            info = '_lr='+str(rate) + '_gamma='+str(gamma)
+            filename = 'resources/part4/'+info+'.jpg'
+            plt.scatter(iterations, train_acc, label='Training Data')
+            plt.scatter(iterations, val_acc, label='Validation Data')
+            plt.scatter(iterations, test_acc, label='Testing Data')
+            plt.title('Learning Curve')
+            plt.xlabel('iterations')
+            plt.ylabel('accuracy')
+            plt.legend()
+            #plt.show()
+            plt.savefig(filename)
+            plt.close()
 
 
     ## Part 7
