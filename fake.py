@@ -5,11 +5,15 @@ from numpy import random as rd
 import matplotlib.pyplot as plt
 import math
 import time
-#from sklearn import tree
-#from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-#import graphviz
 
-#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+import torch
+from torch.autograd import Variable
+#import nn
+
+from sklearn import tree
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 
 def get_data(filename):
@@ -56,7 +60,7 @@ def top_keywords(dict, num):
     kv = sorted( zip(vals, keys), reverse=True )[:num] #sorts both lists based on order of vals, and selects the top num results
     return kv
 
-def all_words(dict1, dict2):
+def add_words(dict1, dict2):
     missing = { x:0 for x in dict1.keys() if x not in dict2.keys() }
     dict2.update( missing )
     
@@ -81,7 +85,7 @@ def sets(fake_lines, real_lines):
     training_set   = fake_lines[:int(round(0.7*len(fake_lines)))]
     validation_set = fake_lines[int(round(0.7*len(fake_lines))):int(round(0.85*len(fake_lines)))]
     testing_set    = fake_lines[int(round(0.85*len(fake_lines))):]
-    y_tr = [1]*len(training_set)
+    y_tr = [1]*len(training_set) #1 represents fake
     y_va = [1]*len(validation_set)
     y_te = [1]*len(testing_set)
 
@@ -247,7 +251,7 @@ def check_accuracy(final_fake, y):
     '''Given a list of fake probabilities, compare with the actual results by rounding.
     If the fake  probability is greater than 0.5, consider it fake and if less, consider it real.
     Output the accuracy rate'''
-   
+
     pred_fake = np.array([round(x) for x in final_fake])
     
     y_2 = np.array(y)
@@ -256,8 +260,64 @@ def check_accuracy(final_fake, y):
     total = len(y)
     correct = total - incorrect
     accuracy = correct/total    
+
+
+
+
+def forward(theta, x_train):
+    '''Logistic Regression forward pass'''
+    o = np.dot(x_train, theta)
+    return softmax(o)
+
     
-    return accuracy
+def softmax(y):
+    '''apply softmax pointwise'''
+    return 1/(1 + np.exp(-y) )
+
+def NLL(y_, y): 
+    #y is output of network, y_ is correct results
+    return -np.sum(y_*np.log(y))
+
+def grad(y_, y, x, gamma, theta): 
+    '''compute gradient'''
+    diff = (y - y_) #y is output of network
+    grad_theta = np.sum( (x.T)*diff, 1)  - gamma*(theta)/np.linalg.norm(theta)
+    return  grad_theta
+
+def train(data, rate, gamma):
+    rd.seed(0)
+    theta = rd.rand( len(all_words) )
+    theta = theta - 0.5
+    train_x, train_y, val_x, val_y, test_x, test_y = data
+    
+    max_iter = 1000
+    iterations = [] #for storing x-axis data for plotting
+    train_acc = []
+    val_acc = []
+    test_acc = []
+    iter = 0
+    
+    while iter < max_iter: #Train
+        iter += 1
+        y = forward(theta, train_x)
+        theta = theta - rate*grad(train_y, y, train_x, gamma, theta)
+        if iter%50 == 0:
+            iterations += [iter]
+            train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
+            val_pred = forward(theta, val_x)
+            val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
+            test_pred = forward(theta, test_x)
+            test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
+    
+    # Add final accuracies
+    y = forward(theta, train_x)
+    train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
+    val_pred = forward(theta, val_x)
+    val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
+    test_pred = forward(theta, test_x)
+    test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
+    iterations += [iter]
+    return iterations, train_acc, val_acc, test_acc, theta
 
     #pred_fake = np.array([round(x) for x in final_fake])
     
@@ -287,6 +347,7 @@ if __name__ == "__main__":
     fake_lines_total = get_data('resources/clean_fake.txt') #Get list containing headlines
     real_lines_total = get_data('resources/clean_real.txt')
     #   Get probabilities 
+
     fake_stats_total = get_stats(fake_lines_total) #compute probabilities for each word
     real_stats_total = get_stats(real_lines_total)
     fake_stats_total, real_stats_total = all_words(fake_stats_total, real_stats_total) #add missing words to each dict
@@ -295,6 +356,7 @@ if __name__ == "__main__":
     fake_counts_total = get_count(fake_lines_total) #compute probabilities for each word
     real_counts_total = get_count(real_lines_total)
     fake_counts_total, real_counts_total = all_words(fake_counts_total, real_counts_total) #add missing words to each dict
+
 
     #   Top 10 keywords by percentage
     fake_keywords = top_keywords(fake_stats_total, 10)
@@ -346,6 +408,58 @@ if __name__ == "__main__":
     testing_accuracy = check_accuracy(final_fake_test, y_te)
     
   
+
+
+    ## Part 4
+    all_words = list( fake_stats.keys() )
+    all_words.sort()
+    
+    train_x = np.array( dict_to_vec(all_words, training_set) )
+    train_y = np.array( y_tr.copy() )
+    val_x = np.array( dict_to_vec(all_words, validation_set) )
+    val_y = np.array( y_va.copy() )
+    test_x = np.array( dict_to_vec(all_words, testing_set) )
+    test_y = np.array( y_te.copy() )
+    data = (train_x, train_y, val_x, val_y, test_x, test_y)
+    
+    rates = [1e-3, 1e-4]
+    gammas = [0, 0.1, 0.2, 0.5, 1, 5]
+    for rate in rates:
+        for gamma in gammas:
+            print('Starting Training with: rate = ' + str(rate) + ' and gamma = ' + str(gamma) )
+            iterations, train_acc, val_acc, test_acc = train(data, rate, gamma)
+            
+            #Plot learning curve
+            info = '_lr='+str(rate) + '_gamma='+str(gamma)
+            filename = 'resources/part4/'+info+'.jpg'
+            plt.scatter(iterations, train_acc, label='Training Data')
+            plt.scatter(iterations, val_acc, label='Validation Data')
+            plt.scatter(iterations, test_acc, label='Testing Data')
+            plt.title('Learning Curve')
+            plt.xlabel('iterations')
+            plt.ylabel('accuracy')
+            plt.legend()
+            #plt.show()
+            plt.savefig(filename)
+            plt.close()
+
+    ## Part 6
+    rate, gamma = 1e-3, 1
+    iterations, train_acc, val_acc, test_acc, theta = train(data, rate, gamma)
+    num = 10
+    
+    ind = np.argpartition(theta, -num)[-num:] #get highest num values of theta
+    print('Highest - ')
+    for i in ind:
+        print( all_words[i] + ': ' + str(theta[i]) )
+    
+    ind = np.argpartition(-theta, -num)[-num:] #get lowest num values of theta
+    print('\nLowest  - ')
+    for i in ind:
+        print( all_words[i] + ': ' + str(theta[i]) )
+
+
+
     ## Part 7
         #note that this entire section was run with the rd.seed() in the sets() function as rd.seed(1)
     rd.seed(0)  #numpy randomness used internally of sklearn.tree
