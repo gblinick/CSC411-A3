@@ -6,10 +6,6 @@ import matplotlib.pyplot as plt
 import math
 import time
 
-import torch
-from torch.autograd import Variable
-#import nn
-
 from sklearn import tree
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
@@ -389,7 +385,7 @@ if __name__ == "__main__":
 
 
     ## Part 4
-    all_words = list( fake_stats.keys() )
+    all_words = list( fake_stats_total.keys() )
     all_words.sort()
     
     train_x = np.array( dict_to_vec(all_words, training_set) )
@@ -427,14 +423,18 @@ if __name__ == "__main__":
     num = 10
     
     ind = np.argpartition(theta, -num)[-num:] #get highest num values of theta
+    thetas = [ theta[i] for i in ind]
+    max_thetas = sorted( zip(thetas, ind), reverse=True) #list of tuples ( theta[i], i)
     print('Highest - ')
-    for i in ind:
-        print( all_words[i] + ': ' + str(theta[i]) )
+    for tuple in max_thetas:
+        print( all_words[tuple[1]] + ': ' + str(tuple[0]) )
     
     ind = np.argpartition(-theta, -num)[-num:] #get lowest num values of theta
-    print('\nLowest  - ')
-    for i in ind:
-        print( all_words[i] + ': ' + str(theta[i]) )
+    thetas = [ theta[i] for i in ind]
+    max_thetas = sorted( zip(thetas, ind), reverse=True)
+    print('\nLowest - ')
+    for tuple in max_thetas:
+        print( all_words[tuple[1]] + ': ' + str(tuple[0]) )
 
 
 
@@ -443,7 +443,7 @@ if __name__ == "__main__":
     rd.seed(0)  #numpy randomness used internally of sklearn.tree
     max_depths = [2, 3, 5, 10, 15, 20, 35, 50, 75, 100, None]
     max_feats = [3, 10, 15, None] #max_features
-    all_words = list( fake_stats.keys() )
+    all_words = list( fake_stats_total.keys() )
     stp_wrds=True #True -> includes stop words
     if not stp_wrds:
         all_words = [x for x in all_words if x not in ENGLISH_STOP_WORDS]
