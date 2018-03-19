@@ -7,3 +7,5 @@
 *.log
 *.out
 *.synctex.gz
+*.pytxcode
+*.fdb_latexmk
