@@ -9,7 +9,7 @@ import time
 from sklearn import tree
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
-os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 
 def get_data(filename):
@@ -218,8 +218,10 @@ def check_accuracy(final_fake, y):
     incorrect = np.count_nonzero(pred_fake - y_2)
     total = len(y)
     correct = total - incorrect
-    accuracy = correct/total
-    return accuracy  
+    accuracy = correct/total   
+    return accuracy
+
+
 
 def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
     val_acc = {}
@@ -330,6 +332,8 @@ if __name__ == "__main__":
     real_stats_total = get_stats(real_lines_total)
     fake_stats_total, real_stats_total = add_words(fake_stats_total, real_stats_total) #add missing words to each dict
 
+    #   Get counts 
+
     fake_counts_total = get_count(fake_lines_total) #compute counts for each word
     real_counts_total = get_count(real_lines_total)
     fake_counts_total, real_counts_total = add_words(fake_counts_total, real_counts_total) #add missing words to each dict
@@ -349,7 +353,7 @@ if __name__ == "__main__":
     te = get_stats(testing_set)
     
     
-
+#%%
     ## Part 2
         # First, use the training set to determine p(word|real) for all words in the TOTAL set
         # as well as p(real) and p(false) based on just the TRAINING set.
@@ -357,14 +361,16 @@ if __name__ == "__main__":
     rd.shuffle(fake_lines_total)
     rd.shuffle(real_lines_total)
 
+
     fake_lines_training_set = fake_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
     real_lines_training_set = real_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
     
-    m = 5833
+    m = 2*5833
     mp=1
     
     
     # find the best m,p
+
     mp = 1
     m_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
     #val_acc = optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp)
@@ -372,17 +378,94 @@ if __name__ == "__main__":
     # Part A: Use TRAINING set to get p(real), p(fake), p(word|real) and p(word|fake) for ALL words
     p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
  
+
     # Part B: Calculate p(fake|headline) given a set of headlines and the parameters from the previous step.
     final_fake_train, final_real_train = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, training_set)
     final_fake_test, final_real_test = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, testing_set)
+
 
     
     # Part C: Check the accuracy of our model
     training_accuracy = check_accuracy(final_fake_train, y_tr)
     testing_accuracy = check_accuracy(final_fake_test, y_te)
     
-  
+    print("training accuracy:", training_accuracy*100,"%")
+    print("testing accuracy:", testing_accuracy*100,"%")
+    
+    #testing
+    #p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, 10, 5)
+    #p_fake2, p_real2, adjusted_fake_stats_training_set2, adjusted_real_stats_training_set2 = training_part(fake_lines_training_set, real_lines_training_set, 10000, 0.5)
 
+    #final_fake_val, final_real_val = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
+    #final_fake_va2, final_real_val2 = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
+
+    #val_accuracy = check_accuracy(final_fake_val, y_va)
+    #val_accuracy2 = check_accuracy(final_fake_va2, y_va)
+    
+    #%%
+  
+    ## Part 3
+    # For this part, we want to find p(real|word) - the top 10 percentages
+    # p(real|word) = p(word|real)*p(real)/p(word)
+    # p(word|real) = adjusted_real_stats_training_set
+    
+    rd.seed(1)
+    rd.shuffle(fake_lines_total)
+    rd.shuffle(real_lines_total)
+
+    fake_lines_training_set = fake_lines_total[:int(round(0.7*len(fake_lines_total)))]
+    real_lines_training_set = real_lines_total[:int(round(0.7*len(real_lines_total)))]
+    training_set2 = fake_lines_training_set + real_lines_training_set
+    
+    #rd.seed(1)
+    #rd.shuffle(fake_lines_total)
+    #rd.shuffle(real_lines_total)
+
+    #training_set   = fake_lines_total[:int(round(0.7*len(fake_lines_total)))]
+    #training_set.extend(   real_lines_total[:int(round(0.7*len(real_lines_total)))] )
+    
+    # missing = { x:0 for x in counts_training.keys() if x not in real_stats_training_set.keys() }
+    #counts_training.get('zieht')
+    #real_stats_training_set.get('zieht')
+    
+    # p(real) and p(fake)
+    p_real = len(real_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
+    p_fake = len(fake_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
+
+    
+    # p(word)
+    # p(word) = count(number of headlines with word)/count(number of headlines)
+    
+    ## count(number of headlines)
+    divisor = len(training_set2)
+    ## count(number of headlines with word) for all words in training set
+    #counts_training = get_count(training_set)
+    counts_training2 = get_count(training_set2)
+    
+    p_words = {}
+    for word in counts_training2.keys():
+        p_words[word] = counts_training2.get(word)/divisor
+    
+    #p(word|real) without adjustment   
+    real_stats_training_set = get_stats(real_lines_training_set)
+    #p(word|fake) without adjustment
+    fake_stats_training_set = get_stats(fake_lines_training_set)
+
+    real_stats_training_set, fake_stats_training_set = add_words(real_stats_training_set, fake_stats_training_set)
+        
+    p_realIword = {}
+    p_fakeIword = {}
+    for word in p_words.keys():
+        p_realIword[word] = (real_stats_training_set.get(word)*p_real)/p_words.get(word)
+        p_fakeIword[word] = (fake_stats_training_set.get(word)*p_fake)/p_words.get(word)
+    
+     #   Top 10 keywords by percentage
+    p_realIword_top = top_keywords(p_realIword, 2000)
+    p_fakeIword_top = top_keywords(p_fakeIword, 2000)
+    
+        
+
+#%%
 
     ## Part 4
     all_words = list( fake_stats_total.keys() )

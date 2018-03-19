@@ -274,6 +274,126 @@
 
 
 
+\item 
+In the second part , we created a function called "evaluate" which uses the outputs of the first function -  p(real), p(fake), $p(word\|real)$, $p(word\|fake)$ - as its inputs, uses them to compute $p(headline\|real)$ and $p(healine\|fake)$ for a given
+set of headlines, and in turn uses those to compute $p(real\|headline)$ and $p(fake\|headline)$ for the set of headlines, which is the function output. In in this function that we utlize the fact that \begin{equation}a_1 \cdot a_2 ...=  e^{log{a_1} + log{a_2} ...} \end{equation}, in order to compute 
+$p(headline\|real)$ as the product of $p(word\|real)$ for all words in and outside the statement. Performing the calculation in this way avoids underflow problems.
+The implementation of the function is:
+\begin{lstlisting}[language=Python]
+def evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, SET):
+    ''' Calculate p(fake|headline) for all headlines in a given set (TRAINING, TEST, VALIDATION).
+    Takes p(real), p(fake), p(word|real), p(word|fake) as parameters.'''
+
+    total_real_probabilities = {}
+    total_fake_probabilities = {}
+    
+    all_words = list(real_counts_total.keys())
+    
+    for headline in SET:
+         
+        probabilities_real = []
+        probabilities_fake = []
+        
+        headline_words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
+        for word in headline_words:
+            probabilities_real.append(adjusted_real_stats_training_set.get(word))
+            probabilities_fake.append(adjusted_fake_stats_training_set.get(word))
+        non_headline_words = [x for x in all_words if x not in headline_words]
+        for word in non_headline_words:
+            probabilities_real.append(1 - adjusted_real_stats_training_set.get(word))
+            probabilities_fake.append(1 - adjusted_fake_stats_training_set.get(word))
+        
+        total_real_probability = 0
+        total_fake_probability = 0
+        for k in range(len(probabilities_real)):
+            total_real_probability = total_real_probability + math.log(probabilities_real[k])
+            total_fake_probability = total_fake_probability + math.log(probabilities_fake[k])
+        total_real_probability = math.exp(total_real_probability)
+        total_real_probabilities[headline] = total_real_probability
+        total_fake_probability = math.exp(total_fake_probability)
+        total_fake_probabilities[headline] = total_fake_probability
+
+    ## At this point, we have calculated p(headline|real) and p(headline|fake) for all
+    ## headlines in whatever set we are testing
+    ## Now we need to find p(fake|headline) which means multiplying p(headline|fake) by p(fake) and 
+    ## dividing by p(headline|fake)*p(fake) + p(headline|real)*p(real) 
+
+    #Compute final probabilites
+    numerator_fake = [p_fake*x for x in total_fake_probabilities.values()]
+    numerator_real = [p_real*x for x in total_real_probabilities.values()]
+    
+    final_fake = [numerator_fake[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_fake))]
+    final_real = [numerator_real[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_real))]
+
+    return final_fake, final_real
+  \end{lstlisting}
+
+\item 
+Finally, in the third part, we have a function called "check\_accuracy" to determine the percentage of statements correctly classified. It does this by accepting $p(fake\|headline)$ from the previous function,
+as well as an array indicating whether a headline is fake by a 1 or real by a 0. The function then creates a new array that accepts  $p(fake\|headline)$ for a given headline and rounds it to 1 if it is 0.5 or greater, and down to 0 otherwise.
+The function then subtracts this new array from our checker array and counts the number of non-zero elements. These elements represent incorrect classifications and allow us to determine our accuracy.
+Our function  implementation is:
+\begin{lstlisting}[language=Python]
+def check_accuracy(final_fake, y):
+    '''Given a list of fake probabilities, compare with the actual results by rounding.
+    If the fake  probability is greater than 0.5, consider it fake and if less, consider it real.
+    Output the accuracy rate'''
+    ## At this point we are done and have found p(fake|headline).
+    ## All that remains is accuracy checking
+    ## This part takes final_fake and one of y_tr, y_va, y_te as parameters
+    ## and returns a percentage value in accuracy
+
+    pred_fake = np.array([round(x) for x in final_fake])
+    
+    y_2 = np.array(y)
+    
+    incorrect = np.count_nonzero(pred_fake - y_2)
+    total = len(y)
+    correct = total - incorrect
+    accuracy = correct/total    
+    
+    return accuracy
+
+  \end{lstlisting}
+
+
+
+
+
+\end{enumerate}
+
+In choosing our parameters m and p for the model, we began with a value of m = $2 \cdot 5833 $ and $ \dfrac {1}{2 \cdot 5833}$ and optimized from there. This was chosen as our starting point because as mentioned on Piazza, it allows for
+1 example per class per word and is intuitive. We then chose 4 different values of m and p and tested how they perform on our validation set, via a function called "optimize\_mp". Our optimal m and p values were found to not matter so much,as long as they weren't 
+$ \dfrac {1}{1 \cdot 5833}$ and 5833, respectively. If we chose higher values for m and corresponding lower values for p, we achieved an acuracy on the validation set of 91.3\%. 
+\begin{center}
+\begin{tabular}{ |c|c| } 
+ \hline
+ m & accuracy \\ [0.5ex] 
+\hline \hline
+ 5833 & 90.8\% \\ 
+ $2 \cdot 5833$ & 91.3\% \\ 
+ $3 \cdot 5833$ & 91.3\%  \\
+ $4 \cdot 5833$ & 91.3\%  \\ 
+ \hline
+\end{tabular}
+\end{center}
+
+Our optimize\_mp function is:
+\begin{lstlisting}[language=Python]
+def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
+    val_acc = {}
+    for m in m_s:
+        print(m)
+        p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
+        final_fake, final_real = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
+        val_acc[m] = check_accuracy(final_fake, y_va)
+    return val_acc
+
+  \end{lstlisting}
+
+Finally, on the training set we obtained an accuracy of 92.5\% while on the testing set we achieved an accuracy of 92.2\%.
+
+
    \section{Predictive Factors}
 
 
