@@ -247,12 +247,7 @@ def check_accuracy(final_fake, y):
     '''Given a list of fake probabilities, compare with the actual results by rounding.
     If the fake  probability is greater than 0.5, consider it fake and if less, consider it real.
     Output the accuracy rate'''
-    ## At this point we are done and have found p(fake|headline).
-    ## All that remains is accuracy checking
-    ## This part takes final_fake and one of y_tr, y_va, y_te as parameters
-    ## and returns a percentage value in accuracy
-    ## It's back here
-
+   
     pred_fake = np.array([round(x) for x in final_fake])
     
     y_2 = np.array(y)
@@ -263,6 +258,17 @@ def check_accuracy(final_fake, y):
     accuracy = correct/total    
     
     return accuracy
+
+    #pred_fake = np.array([round(x) for x in final_fake])
+    
+    #y_2 = np.array(y)
+    
+    #incorrect = np.count_nonzero(pred_fake - y_2)
+    #total = len(y)
+    #correct = total - incorrect
+    #accuracy = correct/total    
+    
+    #return accuracy
 
 
 def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
