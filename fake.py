@@ -6,10 +6,6 @@ import matplotlib.pyplot as plt
 import math
 import time
 
-import torch
-from torch.autograd import Variable
-#import nn
-
 from sklearn import tree
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
@@ -70,8 +66,6 @@ def add_words(dict1, dict2):
 
 def part_1(dict1, dict2):   
     ''' return a list of the top 10 words by percentage that appear in dict1 over dict2'''
-    #new_dict1 = {x: 0 for x in dict2 if x not in dict1}
-    #dict1.update(new_dict1)
     dict1_minus_dict2_perc = {x: dict1[x] - dict2[x] for x in dict1 if x in dict2}
     dict1_minus_dict2_keywords = top_keywords(dict1_minus_dict2_perc, 10)
     return dict1_minus_dict2_keywords
@@ -95,7 +89,6 @@ def sets(fake_lines, real_lines):
     y_tr += [0]*( len(training_set) - len(y_tr) )
     y_va += [0]*( len(validation_set) - len(y_va) )
     y_te += [0]*( len(testing_set) - len(y_te) )
-
     return training_set, validation_set, testing_set, y_tr, y_va, y_te
 
 def dict_to_vec(all_words, lines):
@@ -111,35 +104,6 @@ def dict_to_vec(all_words, lines):
         X += [x]
     return X
 
-def mutual_info(word, y):
-    count_word = 0 #number of headlines with word in training set
-    lines_with_word = []
-    lines_without_word = []
-    for k in range(len(training_set)):
-        if word in training_set[k]:
-            count_word += 1
-            lines_with_word += [k]
-        else:
-            lines_without_word += [k]
-    prob_word = count_word/len(training_set)
-    
-    y_with = np.array( [y[i] for i in lines_with_word] )
-    y_without = np.array( [y[i] for i in lines_without_word] )
-    
-    prob_fake = np.count_nonzero(y)/len(y)
-    H = prob_fake*np.log(prob_fake) + (1 - prob_fake)*np.log(1 - prob_fake) #entropy before split
-    H = - H/np.log(2) #convert to base 2, and apply negative
-    
-    prob_fake_with = np.count_nonzero(y_with)/len(y_with)
-    Hy = prob_fake_with*np.log(prob_fake_with) + (1 - prob_fake_with)*np.log(1 - prob_fake_with) 
-    Hy = - Hy/np.log(2) #entropy of headlines with word
-    
-    prob_fake_without = np.count_nonzero(y_without)/len(y_without)
-    Hn = prob_fake_without*np.log(prob_fake_without) + (1 - prob_fake_without)*np.log(1 - prob_fake_without) 
-    Hn = - Hn/np.log(2)  #entropy of headlines without word
-    
-    I = H - (Hy*len(y_with) + Hn*len(y_without) )/len(y)
-    return I
 
     
 
@@ -147,8 +111,8 @@ def mutual_info(word, y):
 def training_part(fake_lines_training_set, real_lines_training_set, m, p):
     '''Takes in a list of training set lines divided into real and fake groups.
     Returns a list of probabilities that represent p(word|real) and p(word|fake).
-    Therefore, this list will be 5833 long to account for every word.
-    '''
+    this list will be 5833 long to account for every word. '''
+    
     #Part 1: Training: calculate p(real), p(fake), and p(word|real), p(word|fake)
     fake_stats_training_set = get_stats(fake_lines_training_set) #compute probabilities for each word
     real_stats_training_set = get_stats(real_lines_training_set)
@@ -176,10 +140,8 @@ def training_part(fake_lines_training_set, real_lines_training_set, m, p):
     missing = { x:0 for x in real_counts_total.keys() if x not in fake_counts_training_set.keys() }
     fake_counts_training_set.update( missing )
     
-    
     adjusted_fake_counts_training_set = {} 
     adjusted_real_counts_training_set = {} 
-    
     
     
     for word in all_words:
@@ -233,10 +195,10 @@ def evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_sta
         total_fake_probability = math.exp(total_fake_probability)
         total_fake_probabilities[headline] = total_fake_probability
 
-    ## At this point, we have calculated p(headline|real) and p(headline|fake) for all
-    ## headlines in whatever set we are testing
-    ## Now we need to find p(fake|headline) which means multiplying p(headline|fake) by p(fake) and 
-    ## dividing by p(headline|fake)*p(fake) + p(headline|real)*p(real) 
+    # At this point, we have calculated p(headline|real) and p(headline|fake) for all
+    # headlines in whatever set we are testing
+    # Now we need to find p(fake|headline) which means multiplying p(headline|fake) by p(fake) and 
+    # dividing by p(headline|fake)*p(fake) + p(headline|real)*p(real) 
 
     #Compute final probabilites
     numerator_fake = [p_fake*x for x in total_fake_probabilities.values()]
@@ -244,16 +206,13 @@ def evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_sta
     
     final_fake = [numerator_fake[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_fake))]
     final_real = [numerator_real[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_real))]
-
     return final_fake, final_real
 
 def check_accuracy(final_fake, y):
     '''Given a list of fake probabilities, compare with the actual results by rounding.
     If the fake  probability is greater than 0.5, consider it fake and if less, consider it real.
     Output the accuracy rate'''
-
     pred_fake = np.array([round(x) for x in final_fake])
-    
     y_2 = np.array(y)
     
     incorrect = np.count_nonzero(pred_fake - y_2)
@@ -264,13 +223,21 @@ def check_accuracy(final_fake, y):
 
 
 
+def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
+    val_acc = {}
+    for m in m_s:
+        print('Optimizing Naive Bayes with m = ' + str(m) )
+        p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
+        final_fake, final_real = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
+        val_acc[m] = check_accuracy(final_fake, y_va)
+    return val_acc
+
 
 def forward(theta, x_train):
     '''Logistic Regression forward pass'''
     o = np.dot(x_train, theta)
     return softmax(o)
 
-    
 def softmax(y):
     '''apply softmax pointwise'''
     return 1/(1 + np.exp(-y) )
@@ -285,7 +252,7 @@ def grad(y_, y, x, gamma, theta):
     grad_theta = np.sum( (x.T)*diff, 1)  - gamma*(theta)/np.linalg.norm(theta)
     return  grad_theta
 
-def train(data, rate, gamma):
+def train(data, rate, gamma): #train logistic regression for part 4
     rd.seed(0)
     theta = rd.rand( len(all_words) )
     theta = theta - 0.5
@@ -320,26 +287,39 @@ def train(data, rate, gamma):
     iterations += [iter]
     return iterations, train_acc, val_acc, test_acc, theta
 
-    #pred_fake = np.array([round(x) for x in final_fake])
+
+def mutual_info(word, y):
+    count_word = 0 #number of headlines with word in training set
+    lines_with_word = []
+    lines_without_word = []
+    for k in range(len(training_set)):
+        if word in training_set[k]:
+            count_word += 1
+            lines_with_word += [k]
+        else:
+            lines_without_word += [k]
+    prob_word = count_word/len(training_set)
     
-    #y_2 = np.array(y)
+    y_with = np.array( [y[i] for i in lines_with_word] )
+    y_without = np.array( [y[i] for i in lines_without_word] )
     
-    #incorrect = np.count_nonzero(pred_fake - y_2)
-    #total = len(y)
-    #correct = total - incorrect
-    #accuracy = correct/total    
+    prob_fake = np.count_nonzero(y)/len(y)
+    H = prob_fake*np.log(prob_fake) + (1 - prob_fake)*np.log(1 - prob_fake) #entropy before split
+    H = - H/np.log(2) #convert to base 2, and apply negative
     
-    #return accuracy
+    prob_fake_with = np.count_nonzero(y_with)/len(y_with)
+    Hy = prob_fake_with*np.log(prob_fake_with) + (1 - prob_fake_with)*np.log(1 - prob_fake_with) 
+    Hy = - Hy/np.log(2) #entropy of headlines with word
+    
+    prob_fake_without = np.count_nonzero(y_without)/len(y_without)
+    Hn = prob_fake_without*np.log(prob_fake_without) + (1 - prob_fake_without)*np.log(1 - prob_fake_without) 
+    Hn = - Hn/np.log(2)  #entropy of headlines without word
+    
+    I = H - (Hy*len(y_with) + Hn*len(y_without) )/len(y)
+    return I
 
 
-def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
-    val_acc = {}
-    for m in m_s:
-        print(m)
-        p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
-        final_fake, final_real = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
-        val_acc[m] = check_accuracy(final_fake, y_va)
-    return val_acc
+
 
 if __name__ == "__main__":
     
@@ -347,14 +327,14 @@ if __name__ == "__main__":
     #   Get data
     fake_lines_total = get_data('resources/clean_fake.txt') #Get list containing headlines
     real_lines_total = get_data('resources/clean_real.txt')
-    #   Get probabilities 
-
+    
     fake_stats_total = get_stats(fake_lines_total) #compute probabilities for each word
     real_stats_total = get_stats(real_lines_total)
     fake_stats_total, real_stats_total = add_words(fake_stats_total, real_stats_total) #add missing words to each dict
 
     #   Get counts 
-    fake_counts_total = get_count(fake_lines_total) 
+
+    fake_counts_total = get_count(fake_lines_total) #compute counts for each word
     real_counts_total = get_count(real_lines_total)
     fake_counts_total, real_counts_total = add_words(fake_counts_total, real_counts_total) #add missing words to each dict
 
@@ -375,36 +355,37 @@ if __name__ == "__main__":
     
 #%%
     ## Part 2
-    
-    
-    ### First, use the training set to determine p(word|real) for all words in the TOTAL set
-    ### as well as p(real) and p(false) based on just the TRAINING set.
+        # First, use the training set to determine p(word|real) for all words in the TOTAL set
+        # as well as p(real) and p(false) based on just the TRAINING set.
     rd.seed(1)
     rd.shuffle(fake_lines_total)
     rd.shuffle(real_lines_total)
 
-    fake_lines_training_set = fake_lines_total[:int(round(0.7*len(fake_lines_total)))]
-    real_lines_training_set = real_lines_total[:int(round(0.7*len(real_lines_total)))]
+
+    fake_lines_training_set = fake_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
+    real_lines_training_set = real_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
     
     m = 2*5833
     mp=1
     
     
-    
     # find the best m,p
-   # mp = 1
-    #m_s = [(1*5833), (2*5833), (3*5833), (4*5833)]
+
+    mp = 1
+    m_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
     #val_acc = optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp)
     
-    ## Part 1: Use TRAINING set to get p(real), p(fake), p(word|real) and p(word|fake) for ALL words
+    # Part A: Use TRAINING set to get p(real), p(fake), p(word|real) and p(word|fake) for ALL words
     p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
  
-    ## Part 2: Calculate p(fake|headline) given a set of headlines and the parameters from the previous step.
-    #final_fake_train, final_real_train = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, training_set)
-    #final_fake_test, final_real_test = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, testing_set)
+
+    # Part B: Calculate p(fake|headline) given a set of headlines and the parameters from the previous step.
+    final_fake_train, final_real_train = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, training_set)
+    final_fake_test, final_real_test = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, testing_set)
+
 
     
-    ## Part 3: Check the accuracy of our model
+    # Part C: Check the accuracy of our model
     training_accuracy = check_accuracy(final_fake_train, y_tr)
     testing_accuracy = check_accuracy(final_fake_test, y_te)
     
@@ -487,7 +468,7 @@ if __name__ == "__main__":
 #%%
 
     ## Part 4
-    all_words = list( fake_stats.keys() )
+    all_words = list( fake_stats_total.keys() )
     all_words.sort()
     
     train_x = np.array( dict_to_vec(all_words, training_set) )
@@ -525,14 +506,18 @@ if __name__ == "__main__":
     num = 10
     
     ind = np.argpartition(theta, -num)[-num:] #get highest num values of theta
+    thetas = [ theta[i] for i in ind]
+    max_thetas = sorted( zip(thetas, ind), reverse=True) #list of tuples ( theta[i], i)
     print('Highest - ')
-    for i in ind:
-        print( all_words[i] + ': ' + str(theta[i]) )
+    for tuple in max_thetas:
+        print( all_words[tuple[1]] + ': ' + str(tuple[0]) )
     
     ind = np.argpartition(-theta, -num)[-num:] #get lowest num values of theta
-    print('\nLowest  - ')
-    for i in ind:
-        print( all_words[i] + ': ' + str(theta[i]) )
+    thetas = [ theta[i] for i in ind]
+    max_thetas = sorted( zip(thetas, ind), reverse=True)
+    print('\nLowest - ')
+    for tuple in max_thetas:
+        print( all_words[tuple[1]] + ': ' + str(tuple[0]) )
 
 
 
@@ -541,7 +526,7 @@ if __name__ == "__main__":
     rd.seed(0)  #numpy randomness used internally of sklearn.tree
     max_depths = [2, 3, 5, 10, 15, 20, 35, 50, 75, 100, None]
     max_feats = [3, 10, 15, None] #max_features
-    all_words = list( fake_stats.keys() )
+    all_words = list( fake_stats_total.keys() )
     stp_wrds=True #True -> includes stop words
     if not stp_wrds:
         all_words = [x for x in all_words if x not in ENGLISH_STOP_WORDS]
