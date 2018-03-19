@@ -85,7 +85,7 @@ def sets(fake_lines, real_lines):
     training_set   = fake_lines[:int(round(0.7*len(fake_lines)))]
     validation_set = fake_lines[int(round(0.7*len(fake_lines))):int(round(0.85*len(fake_lines)))]
     testing_set    = fake_lines[int(round(0.85*len(fake_lines))):]
-    y_tr = [1]*len(training_set)
+    y_tr = [1]*len(training_set) #1 represents fake
     y_va = [1]*len(validation_set)
     y_te = [1]*len(testing_set)
 
@@ -268,6 +268,42 @@ def grad(y_, y, x, gamma, theta):
     grad_theta = np.sum( (x.T)*diff, 1)  - gamma*(theta)/np.linalg.norm(theta)
     return  grad_theta
 
+def train(data, rate, gamma):
+    rd.seed(0)
+    theta = rd.rand( len(all_words) )
+    theta = theta - 0.5
+    train_x, train_y, val_x, val_y, test_x, test_y = data
+    
+    max_iter = 1000
+    iterations = [] #for storing x-axis data for plotting
+    train_acc = []
+    val_acc = []
+    test_acc = []
+    iter = 0
+    
+    while iter < max_iter: #Train
+        iter += 1
+        y = forward(theta, train_x)
+        theta = theta - rate*grad(train_y, y, train_x, gamma, theta)
+        if iter%50 == 0:
+            iterations += [iter]
+            train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
+            val_pred = forward(theta, val_x)
+            val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
+            test_pred = forward(theta, test_x)
+            test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
+    
+    # Add final accuracies
+    y = forward(theta, train_x)
+    train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
+    val_pred = forward(theta, val_x)
+    val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
+    test_pred = forward(theta, test_x)
+    test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
+    iterations += [iter]
+    return iterations, train_acc, val_acc, test_acc, theta
+
+
 
 if __name__ == "__main__":
     
@@ -313,42 +349,14 @@ if __name__ == "__main__":
     val_y = np.array( y_va.copy() )
     test_x = np.array( dict_to_vec(all_words, testing_set) )
     test_y = np.array( y_te.copy() )
+    data = (train_x, train_y, val_x, val_y, test_x, test_y)
     
     rates = [1e-3, 1e-4]
     gammas = [0, 0.1, 0.2, 0.5, 1, 5]
-    max_iter = 1000
     for rate in rates:
         for gamma in gammas:
-            rd.seed(0)
-            theta = rd.rand( len(all_words) )
-            theta = theta - 0.5
-            train_acc = []
-            iterations = [] #for storing x-axis data for plotting
-            val_acc = []
-            test_acc = []
-            iter = 0
             print('Starting Training with: rate = ' + str(rate) + ' and gamma = ' + str(gamma) )
-            
-            while iter < max_iter: #Train
-                iter += 1
-                y = forward(theta, train_x)
-                theta = theta - rate*grad(train_y, y, train_x, gamma, theta)
-                if iter%50 == 0:
-                    iterations += [iter]
-                    train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
-                    val_pred = forward(theta, val_x)
-                    val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
-                    test_pred = forward(theta, test_x)
-                    test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
-            
-            # Add final accuracies
-            y = forward(theta, train_x)
-            train_acc += [1 - np.count_nonzero(np.round(y) - train_y)/len(train_y) ]
-            val_pred = forward(theta, val_x)
-            val_acc += [1 - np.count_nonzero(np.round(val_pred) - val_y)/len(val_y) ]
-            test_pred = forward(theta, test_x)
-            test_acc += [1 - np.count_nonzero(np.round(test_pred) - test_y)/len(test_y) ]
-            iterations += [iter]
+            iterations, train_acc, val_acc, test_acc = train(data, rate, gamma)
             
             #Plot learning curve
             info = '_lr='+str(rate) + '_gamma='+str(gamma)
@@ -363,6 +371,21 @@ if __name__ == "__main__":
             #plt.show()
             plt.savefig(filename)
             plt.close()
+
+    ## Part 6
+    rate, gamma = 1e-3, 1
+    iterations, train_acc, val_acc, test_acc, theta = train(data, rate, gamma)
+    num = 10
+    
+    ind = np.argpartition(theta, -num)[-num:] #get highest num values of theta
+    print('Highest - ')
+    for i in ind:
+        print( all_words[i] + ': ' + str(theta[i]) )
+    
+    ind = np.argpartition(-theta, -num)[-num:] #get lowest num values of theta
+    print('\nLowest  - ')
+    for i in ind:
+        print( all_words[i] + ': ' + str(theta[i]) )
 
 
     ## Part 7
