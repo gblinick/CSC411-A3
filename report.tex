@@ -136,9 +136,10 @@
             \hline
             $mp$ & accuracy \\
             \hline \hline
-            $2 \cdot 5833$ & 83.1\% \\
-            $3 \cdot 5833$ & 82.9\%  \\
-            $4 \cdot 5833$ & 82.7\%  \\
+            $1 \cdot 5833$ & 90.4\% \\
+            $2 \cdot 5833$ &  90.4\% \\
+            $3 \cdot 5833$ &  90.4\%  \\
+            $4 \cdot 5833$ &  90.4\%  \\
             \hline
          \end{tabular}
 
@@ -147,10 +148,9 @@
       \end{table}
 
 
-   Our optimal $m$ and $p$ values were found to be 1 and 5833 (the number of words), respectively, achieving
-   an acuracy on the validation set of 83.7\%.
-   These values gave an accuracy of 83.4\% on the training set, while on the testing set
-   we achieved an accuracy of 84.5\%.
+   We discovered that all our choices for $m$ and $p$ lead to the same accuracy of 90.4\%, so we decided to stay with our initial values for $m$ and $p$ of 2 and 5833, respectively. 
+   These values gave an accuracy of 92.3\% on the training set, while on the testing set
+   we achieved an accuracy of 92.2\%.
 
 
    \section{Predictive Factors for Naive Bayes}
@@ -161,19 +161,32 @@
    \begin{enumerate}
    \item $p(real \| word)$
    \\
-           \includegraphics[width=4in]{resources/part3/realword}
+
+           %\includegraphics[width=4in]{resources/part3/p(realword)}
+	\\
+	"xi", "wrap", "whats", "west", "turnbull", "troops", "travel", "tourism", "tillerson", "third"
 
    \item $p(real \| not\_word)$
    \\
-           \includegraphics[width=4in]{resources/part3/realnotword}
+          % \includegraphics[width=4in]{resources/part3/p(realnotword)}
+\\
+	"trump", "the", "to", "hillary", "a", "is", "and", "for", "in", "of"
+
 
    \item $p(fake \| word)$
    \\
-           \includegraphics[width=4in]{resources/part3/fakeword}
+          % \includegraphics[width=4in]{resources/part3/p(fakeword)}
+\\
+	"thug", "these", "surprise", "supression", "story", "steal", "start", "soros", "save", "protestor"
+
 
    \item $p(fake \| not\_word)$
    \\
-           \includegraphics[width=4in]{resources/part3/fakenotword}
+          % \includegraphics[width=4in]{resources/part3/p(fakenotword)}
+\\
+	"donald", "trumps", "us", "north", "says", "korea", "ban", "turnbull", "travel", "wall"
+
+
 
    \end{enumerate}
 
@@ -191,20 +204,22 @@
    The calculcations for $p(real \| word)$ and $p(real \| not\_word)$ proceed in an equivalent way with an
    appropriate substitution of "fake" for any mention of "real".
    \\
+  
+
+
    What is observable from these results is that the precense of certain words has far greater predictive ability
    than the absence of any given word. This is logical, as certain words that appear rarely and only in either
    real or fake headlines will be entirely associated with the class they are found in. By contrast, the
    absence of any one word is not enough to definatively assign a class of real or fake since the remaining
    headlines without the given word do not all fall into one class or another.
 
-   \subsection{Without Stop Words}
+   \\subsection{Non Stop Words}
    \begin{enumerate}
-      \item Predict Real
-      \\
-              \includegraphics[width=4in]{resources/part3/3breal}
-      \item Predict Fake
-      \\
-              \includegraphics[width=4in]{resources/part3/3bfake}
+\item Fake Words
+"thug", "surprise", "supression", "story", "steal", "start", "soros", "save", "protestor", "msnbc"
+\item Real Words
+	"xi", "wrap", "whats", "west", "turnbull", "troops", "travel", "tourism", "tillerson", "sessions"
+
    \end{enumerate}
 
    \subsection{Stop Words}
