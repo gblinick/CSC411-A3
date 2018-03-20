@@ -155,8 +155,9 @@
 
    \section{Predictive Factors for Naive Bayes}
    \subsection{Words}
-   The following 4 images present the top 10 words for each relevant probability. Note that for some classes, such as $p(real \| word)$, there were many other words that could have been in the list provided. Also note that for $ p(real \| word)$ the probabilities are
-   slightly greater than 1 due to rounding.
+   The following 4 images present the top 10 words for each relevant probability. Note that for some classes,
+   such as $p(real \| word)$, there were many other words that could have been in the list provided. Also note
+   that for $ p(real \| word)$ the probabilities are slightly greater than 1 due to rounding.
    \begin{enumerate}
    \item $p(real \| word)$
    \\
@@ -176,28 +177,41 @@
 
    \end{enumerate}
 
-   These values were obtained by applying Bayes rule. More specifically, we calculated $p(real \| word)$ by $ \dfrac {p(word \| real) \cdot p(real)}{p(word)}$. $p(word \| real)$ can be obtained for every word by taking the number of headlines with a given word
-   in the training set that are also real and dividing it by the total number of headlines that are real in the training set. $p(real)$ is the number of headlines in the training set that are real divided by the total number of headlines in the training set. Finally, p(word) is the number of headlines in the training set with the word divided by the number of headlines in the training set. All these are easily obtained.
+   These values were obtained by applying Bayes rule. More specifically, we calculated $p(real \| word)$ by
+   $ \dfrac {p(word \| real) \cdot p(real)}{p(word)}$. $p(word \| real)$ can be obtained for every word by taking
+   the number of headlines with a given word in the training set that are also real and dividing it by the
+   total number of headlines that are real in the training set. $p(real)$ is the number of headlines in the
+   training set that are real divided by the total number of headlines in the training set. Finally, p(word) is
+   the number of headlines in the training set with the word divided by the number of headlines in the training set.
+   All these are easily obtained.
    \\
-   To obtain $p(real \| not\_word)$, we use $ \dfrac {p(not\_word \| real) \cdot p(real)}{p(not\_word)}$. p(real) is the same from the previous step, $p(not\_word \| real)$ is 1 - $p(real \| word)$, and $p(not\_word)$ is the number of headlines without a word in the training  set divided by the total number of headlines.
-   The calculcations for $p(real \| word)$ and $p(real \| not\_word)$ proceed in an equivalent way with an appropriate substitution of "fake" for any mention of "real".
+   To obtain $p(real \| not\_word)$, we use $ \dfrac {p(not\_word \| real) \cdot p(real)}{p(not\_word)}$. p(real)
+   is the same from the previous step, $p(not\_word \| real)$ is 1 - $p(real \| word)$, and $p(not\_word)$ is the
+   number of headlines without a word in the training  set divided by the total number of headlines.
+   The calculcations for $p(real \| word)$ and $p(real \| not\_word)$ proceed in an equivalent way with an
+   appropriate substitution of "fake" for any mention of "real".
    \\
-   What is observable from these results is that the precense of certain words has far greater predictive ability than the absence of any given word. This is logical, as certain words that appear rarely and only in either real or fake headlines will be entirely associated
-   with the class they are found in. By contrast, the absence of any one word is not enough to definatively assign a class of real or fake since the remaining headlines without the given word do not all fall into one class or another.
+   What is observable from these results is that the precense of certain words has far greater predictive ability
+   than the absence of any given word. This is logical, as certain words that appear rarely and only in either
+   real or fake headlines will be entirely associated with the class they are found in. By contrast, the
+   absence of any one word is not enough to definatively assign a class of real or fake since the remaining
+   headlines without the given word do not all fall into one class or another.
 
-   \subsection{No Stop Words}
- \begin{enumerate} 
-   \item Predict Real
-   \\
-           \includegraphics[width=4in]{resources/part3/3breal}
-   \item Predict Fake
-   \\
-           \includegraphics[width=4in]{resources/part3/3bfake}
+   \subsection{Without Stop Words}
+   \begin{enumerate}
+      \item Predict Real
+      \\
+              \includegraphics[width=4in]{resources/part3/3breal}
+      \item Predict Fake
+      \\
+              \includegraphics[width=4in]{resources/part3/3bfake}
+   \end{enumerate}
 
-\end{enumerate}
-  \subsection{3c}
-Removing stopwords might make sense because stop words just might by change have a large discrepency in the training data that has no real predictive ability, and therefore cause the model to overfit. It might make sense to keep stopwords because
-they may in fact have predictive ability. 
+   \subsection{Stop Words}
+   Removing stopwords might make sense because stop words just might by change have a large discrepency in the
+   training data that has no real predictive ability, and therefore cause the model to overfit. It might make
+   sense to keep stopwords because they may in fact have predictive ability.
+
 
    \section{Logistic Regression}
    Code from project 2 was modified to run simple logistic regression to predict whether a headline is real
@@ -251,7 +265,10 @@ they may in fact have predictive ability.
 
    \section{Analysis of Logistic Regression}
    Table \ref{part6table} shows the words that had the most impact on the classification of a headline
-   as real or fake via logistic regression.
+   as real or fake via logistic regression. Some, but not all, of these words appeared as significant
+   in the naive bayes implementation, such as ``trmups,'' ``us,'' ``turnbull,'' etc. Note that the (absence
+   of) stop words was significant for naive bayes, but do not seem to play a significant role in
+   the regression classification.
 
    \begin{table}[h]
       \centering
@@ -283,7 +300,8 @@ they may in fact have predictive ability.
    \subsection{Ignoring Stop Words}
    If we eliminate the stop words in the above table, the following list shows the highest (in magnitude)
    values in $theta$ and the corresponding words. (Note that the logistic regression itself still uses stop
-   words, they are simply ignored in this analysis).
+   words, they are simply ignored in this analysis). Once again, some of these words correspond to those
+   in part 3 (when stop words were ignored), though quite a few are new (e.g. ``breaking'').
 
    \begin{table}[h]
       \centering
@@ -368,7 +386,9 @@ they may in fact have predictive ability.
 
    It is interesting to look at the words being split on in these layers; $X$ was a list of all words
    that appeared in either the fake or real datasets. These words are `donald' (23), `trumps' (1604; note the
-   double appearance), `the' (81), `hillary' (44), and `trump' (3). The exact same process of training was run
+   double appearance), `the' (81), `hillary' (44), and `trump' (3). These words are recognizable from earlier
+   sections (parts 1, 3, and 6) as also playing a significant role in classification for the other classifiers.
+   The exact same process of training was run
    ignoring stop words, but results were slightly worse; graphs similar to those mentioned above can be found
    in the \texttt{resources} directory (each filename indicates whether stop words were included, as well as info
    on the other non-default parameters). Note that because of the use of dictionaries (i.e. because
