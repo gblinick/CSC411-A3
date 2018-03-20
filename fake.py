@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
 
     fake_lines_training_set = fake_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
-    real_lines_training_set = real_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
+    real_lines_training_set = real_lines_total[ :int(round(0.7*len(real_lines_total))) ]
     
     m = 2*5833
     mp=1
@@ -371,7 +371,7 @@ if __name__ == "__main__":
     # find the best m,p
 
     mp = 1
-    m_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
+    m_s = [(1*5833), (2*5833),(5*5833),(10*5833)]
     val_acc = optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp)
     
     # Part A: Use TRAINING set to get p(real), p(fake), p(word|real) and p(word|fake) for ALL words
@@ -417,16 +417,7 @@ if __name__ == "__main__":
     real_lines_training_set = real_lines_total[:int(round(0.7*len(real_lines_total)))]
     training_set2 = fake_lines_training_set + real_lines_training_set
     
-    #rd.seed(1)
-    #rd.shuffle(fake_lines_total)
-    #rd.shuffle(real_lines_total)
-
-    #training_set   = fake_lines_total[:int(round(0.7*len(fake_lines_total)))]
-    #training_set.extend(   real_lines_total[:int(round(0.7*len(real_lines_total)))] )
-    
-    # missing = { x:0 for x in counts_training.keys() if x not in real_stats_training_set.keys() }
-    #counts_training.get('zieht')
-    #real_stats_training_set.get('zieht')
+  
     
     # p(real) and p(fake)
     p_real = len(real_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))

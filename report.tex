@@ -136,9 +136,10 @@
             \hline
             $mp$ & accuracy \\
             \hline \hline
-            $2 \cdot 5833$ & 83.1\% \\
-            $3 \cdot 5833$ & 82.9\%  \\
-            $4 \cdot 5833$ & 82.7\%  \\
+	$1 \cdot 5833$ & 90.4\% \\
+            $2 \cdot 5833$ & 90.4\% \\
+            $3 \cdot 5833$ & 90.4\%  \\
+            $4 \cdot 5833$ & 90.4\%  \\
             \hline
          \end{tabular}
 
@@ -147,10 +148,9 @@
       \end{table}
 
 
-   Our optimal $m$ and $p$ values were found to be 1 and 5833 (the number of words), respectively, achieving
-   an acuracy on the validation set of 83.7\%.
-   These values gave an accuracy of 83.4\% on the training set, while on the testing set
-   we achieved an accuracy of 84.5\%.
+   We discovered that for the tested values, we always achieved the same accuracy of 90.4\%. Our optimal $m$ and $p$ values were then take to by  to be 1 and 5833 (the number of words), respectively.
+   These values gave an accuracy of 92.3\% on the training set, while on the testing set
+   we achieved an accuracy of 92.2\%.
 
 
    \section{Predictive Factors for Naive Bayes}
@@ -160,19 +160,23 @@
    \begin{enumerate}
    \item $p(real \| word)$
    \\
-           \includegraphics[width=4in]{resources/part3/realword}
+           %\includegraphics[width=4in]{resources/part3/realword}
+	"xi", "wrap", "whats", "west", "turnbull", "troops", "travel", "tourism", "tillerson", "third"
 
    \item $p(real \| not\_word)$
    \\
-           \includegraphics[width=4in]{resources/part3/realnotword}
+           %\includegraphics[width=4in]{resources/part3/realnotword}
+	"trump", "the", "to", "hillary", "a", "is", "and", "for", "in", "of"
 
    \item $p(fake \| word)$
    \\
-           \includegraphics[width=4in]{resources/part3/fakeword}
+           %\includegraphics[width=4in]{resources/part3/fakeword}
+	"thug", "these", "surprise", "suppression", "story", "steal", "start", "soros", "save", protestor"
 
    \item $p(fake \| not\_word)$
    \\
-           \includegraphics[width=4in]{resources/part3/fakenotword}
+           %\includegraphics[width=4in]{resources/part3/fakenotword}
+	"donald", "trumps", "us", "north", "says", "korea", "ban", "turnbull", "travel", "wall"
 
    \end{enumerate}
 
@@ -189,11 +193,12 @@
  \begin{enumerate} 
    \item Predict Real
    \\
-           \includegraphics[width=4in]{resources/part3/3breal}
+           %\includegraphics[width=4in]{resources/part3/3breal}
+	"xi", "wrap", "whats", "west", "turnbull", "troops", "travel", "tourism", "tillerson", "sessions"
    \item Predict Fake
    \\
-           \includegraphics[width=4in]{resources/part3/3bfake}
-
+          % \includegraphics[width=4in]{resources/part3/3bfake}
+	"thug", "surprise", "suppression", "story", "steal", "start", "soros", "save", protestor", "msnbc"
 \end{enumerate}
   \subsection{3c}
 Removing stopwords might make sense because stop words just might by change have a large discrepency in the training data that has no real predictive ability, and therefore cause the model to overfit. It might make sense to keep stopwords because
