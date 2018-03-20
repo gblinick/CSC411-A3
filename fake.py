@@ -9,7 +9,7 @@ import time
 from sklearn import tree
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
-#os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
+os.chdir('/Users/arielkelman/Documents/Ariel/EngSci3-PhysicsOption/Winter2018/CSC411 - Machine Learning/Project3/CSC411-A3')
 
 
 def get_data(filename):
@@ -353,7 +353,7 @@ if __name__ == "__main__":
     te = get_stats(testing_set)
     
     
-#%%
+
     ## Part 2
         # First, use the training set to determine p(word|real) for all words in the TOTAL set
         # as well as p(real) and p(false) based on just the TRAINING set.
@@ -436,9 +436,9 @@ if __name__ == "__main__":
     # p(word)
     # p(word) = count(number of headlines with word)/count(number of headlines)
     
-    ## count(number of headlines)
+    # count(number of headlines)
     divisor = len(training_set2)
-    ## count(number of headlines with word) for all words in training set
+    # count(number of headlines with word) for all words in training set
     #counts_training = get_count(training_set)
     counts_training2 = get_count(training_set2)
     
@@ -503,7 +503,7 @@ if __name__ == "__main__":
     ## Part 6
     rate, gamma = 1e-3, 1
     iterations, train_acc, val_acc, test_acc, theta = train(data, rate, gamma)
-    num = 10
+    num = 15
     
     ind = np.argpartition(theta, -num)[-num:] #get highest num values of theta
     thetas = [ theta[i] for i in ind]
