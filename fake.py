@@ -372,7 +372,7 @@ if __name__ == "__main__":
 
     mp = 1
     m_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
-    #val_acc = optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp)
+    val_acc = optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp)
     
     # Part A: Use TRAINING set to get p(real), p(fake), p(word|real) and p(word|fake) for ALL words
     p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
@@ -480,7 +480,11 @@ if __name__ == "__main__":
     p_realInot_word_top = top_keywords(p_realInot_word, 10)
     p_fakeInot_word_top = top_keywords(p_fakeInot_word, 10)
     
-    
+    p_realIword_b = {x:p_realIword[x] for x in p_realIword.keys() if x not in ENGLISH_STOP_WORDS }
+    p_realIword_top_b = top_keywords(p_realIword_b, 10)
+
+    p_fakeIword_b = {x:p_fakeIword[x] for x in p_fakeIword.keys() if x not in ENGLISH_STOP_WORDS }
+    p_fakeIword_top_b = top_keywords(p_fakeIword_b, 10)
 
 
 
