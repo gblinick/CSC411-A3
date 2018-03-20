@@ -1,7 +1,7 @@
 \documentclass{article}
 \usepackage[margin=1.2in]{geometry}
 \usepackage{datetime}
-%\usepackage{hyperref}      %for \url macro
+\usepackage{hyperref}      %for \url macro
 \usepackage{microtype}     %attempt to fix issue with justification protrusion (in references)
 \usepackage{amssymb}       % for formatting less/greater than symbols
 \usepackage{amsmath}
@@ -63,19 +63,21 @@
    \section{Dataset Description}
 
    Both datasets (real and fake) contain headlines about U.S. President Donald Trump.
-   From the headlines, it is very much possible to determine with significant accuracy
-   the percentage chance that a given headline is fake or real based on the precense of
-   absence of certain words in the headline. For example, after performing some preliminary
+   From the headlines, it is possible to determine with significant accuracy
+   the probability that a given headline is fake or real based simply on the presence or
+   absence of particular words in the headline. For example, after performing some preliminary
    analyses on the headlines, we discovered that the following 3 words might be of particular use.
    \begin{enumerate}
       \item The word ``donald'' appears 42.05\% of the time in real headlines while appearing in only
             17.55\% of fake headlines. This 24.5\% difference was by far the largest of any word.
       \item The word ``the'' appears 27.9\% of the time in fake headlines while appearing in only
-            7.9\% of real headlines for a difference of 20.02\%.
+            7.9\% of real headlines, for a difference of 20.02\%.
       \item The word ``trumps'' appears 11.1\% of the time in real headlines while appearing in
-            only 0.3\% of fake headlines for a difference of 10.8\%.
+            only 0.3\% of fake headlines, for a difference of 10.8\%.
    \end{enumerate}
 
+   The data was split into a training, validation, and testing set for analysis in the remainder
+   of the report.
 
 
    \subsection{Results \& Report Reproducibility}
@@ -89,312 +91,61 @@
 
 
    \section{Naive Bayes Implementation}
-   In part 2, we implemented the Naive Bayes algorithm on our training, validation and testing sets.
-   To acheive this, we divided our solution into 3 functions and proceeded as follows:
-   \begin{enumerate}
-   \item In our first function "training\_part" we use the training set to achieve estimates for p(real), p(fake), $p(word\|real)$ and $p(word\|fake)$. We estimated $ p(word\|real)$ and $p(word\|fake)$ by counting the number of
-   headlines in the training set where the word appears and the headline is real, added a factor of $ m\cdot p$, and divided this result by the size of the training set plus m. We also included words that were not found in the
-   training set (but found in validation or testing) and set their values to $ \dfrac {m \cdot p}{count(headlines) + m}$.
-   The implementation of our function is"
-   \begin{lstlisting}[language=Python]
+   The Naive Bayes algorithm was implemented in three primary functions.
+   %\begin{enumerate}
+   %\item
+   In the first function \texttt{traing\_part()} we use the training set to achieve estimates for p(real),
+   p(fake), $p(word | real)$ and $p(word | fake)$. We estimated $ p(word | real)$ and $p(word | fake)$ by counting
+   the number of headlines in the training set where the word appears and the headline is real (or fake), adding a
+   factor of $ m \cdot p$, and divided this result by the size of the training set plus $m$. We also included
+   words that were not found in the training set (but found in validation or testing) and set their
+   values to $ \dfrac {m \cdot p}{count(headlines) + m}$, i.e. the value they would have from a count of zero in
+   the training set. This function is \texttt{traing\_part()}, which returns the values of p(real) and p(fake)
+   and dictionaries with the remaining information.
 
-   def training_part(fake_lines_training_set, real_lines_training_set, m, p):
-       '''Takes in a list of training set lines divided into real and fake groups.
-       Returns a list of probabilities that represent p(word|real) and p(word|fake).
-       Therefore, this list will be 5833 long to account for every word.
-       '''
-       #Part 1: Training: calculate p(real), p(fake), and p(word|real), p(word|fake)
-       fake_stats_training_set = get_stats(fake_lines_training_set) #compute probabilities for each word
-       real_stats_training_set = get_stats(real_lines_training_set)
+   %\item
+   In the next stage, we created a function \texttt{evaluate()} which uses the outputs of the first
+   function -  p(real), p(fake), $p(word | real)$, $p(word | fake)$ - to
+   compute $p(headline | real)$ and $p(healine | fake)$ for a given set of headlines, and in turn uses
+   those to compute $p(real | headline)$ and $p(fake | headline)$ for the set of headlines, which is
+   the function output. To avoid ``underflow'' caused by the multiplication of many small numbers (the
+   probabilities for each word are quite low, as most words appear in a small fraction of headlines),
+   we utlize the fact that
+      \begin{equation*}
+         a_1 \cdot a_2 ... a_i =  e^{ln(a_1) + ln(a_2) ... ln(a_i)}
+      \end{equation*}
+   in order to compute $p(headline|real)$ as the product of $p(word|real)$ for all words (whether or not
+   the word appears in the headline).
 
-       fake_counts_training_set = get_count(fake_lines_training_set) #compute counts for each word
-       real_counts_training_set = get_count(real_lines_training_set)
-
-       p_fake = len(fake_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
-       p_real = len(real_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
-
-           # what we want is p(real|words in headline).
-           # this is equal to p(words in headline|real)*p(real), divided by
-           #   p(words in headline|real)*p(real) + p(words in headline|fake)*p(fake)
-           # We already have p(real) and p(fake) from above, so we just need to find
-           # p(words in headline|real) and p(words in headline|fake)
-           # p(word in headline|real) is equal to count(word & real) + mp
-           # divded by count(real) + m.
-           # So we need to choose values for m and p and then come up with a
-           # dictionaries of the adjusted probabilities.
-
-       all_words = list(real_counts_total.keys())
-
-       missing = { x:0 for x in fake_counts_total.keys() if x not in real_counts_training_set.keys() }
-       real_counts_training_set.update( missing )
-       missing = { x:0 for x in real_counts_total.keys() if x not in fake_counts_training_set.keys() }
-       fake_counts_training_set.update( missing )
-
-
-       adjusted_fake_counts_training_set = {}
-       adjusted_real_counts_training_set = {}
-
-
-
-       for word in all_words:
-           adjusted_fake_counts_training_set[word] = fake_counts_training_set[word] + mp
-           adjusted_real_counts_training_set[word] = real_counts_training_set[word] + mp
-
-       naive_divisor = len(all_words) + m
-
-       adjusted_fake_stats_training_set = {} #P(w | fake)
-       adjusted_real_stats_training_set = {} #P(w | real)
-
-       for word in all_words:
-           adjusted_fake_stats_training_set[word] = adjusted_fake_counts_training_set[word]/naive_divisor
-           adjusted_real_stats_training_set[word] = adjusted_real_counts_training_set[word]/naive_divisor
-
-
-       return p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set
-
-      \end{lstlisting}
-
-
-   \item
-   In the second part , we created a function called "evaluate" which uses the outputs of the first function -  p(real), p(fake), $p(word\|real)$, $p(word\|fake)$ - as its inputs, uses them to compute $p(headline\|real)$ and $p(healine\|fake)$ for a given
-   set of headlines, and in turn uses those to compute $p(real\|headline)$ and $p(fake\|headline)$ for the set of headlines, which is the function output. In in this function that we utlize the fact that \begin{equation}a_1 \cdot a_2 ...=  e^{log{a_1} + log{a_2} ...} \end{equation}, in order to compute
-   $p(headline\|real)$ as the product of $p(word\|real)$ for all words in and outside the statement. Performing the calculation in this way avoids underflow problems.
-   The implementation of the function is:
-   \begin{lstlisting}[language=Python]
-   def evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, SET):
-       ''' Calculate p(fake|headline) for all headlines in a given set (TRAINING, TEST, VALIDATION).
-       Takes p(real), p(fake), p(word|real), p(word|fake) as parameters.'''
-
-       total_real_probabilities = {}
-       total_fake_probabilities = {}
-
-       all_words = list(real_counts_total.keys())
-
-       for headline in SET:
-
-           probabilities_real = []
-           probabilities_fake = []
-
-           headline_words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
-           for word in headline_words:
-               probabilities_real.append(adjusted_real_stats_training_set.get(word))
-               probabilities_fake.append(adjusted_fake_stats_training_set.get(word))
-           non_headline_words = [x for x in all_words if x not in headline_words]
-           for word in non_headline_words:
-               probabilities_real.append(1 - adjusted_real_stats_training_set.get(word))
-               probabilities_fake.append(1 - adjusted_fake_stats_training_set.get(word))
-
-           total_real_probability = 0
-           total_fake_probability = 0
-           for k in range(len(probabilities_real)):
-               total_real_probability = total_real_probability + math.log(probabilities_real[k])
-               total_fake_probability = total_fake_probability + math.log(probabilities_fake[k])
-           total_real_probability = math.exp(total_real_probability)
-           total_real_probabilities[headline] = total_real_probability
-           total_fake_probability = math.exp(total_fake_probability)
-           total_fake_probabilities[headline] = total_fake_probability
-
-       ## At this point, we have calculated p(headline|real) and p(headline|fake) for all
-       ## headlines in whatever set we are testing
-       ## Now we need to find p(fake|headline) which means multiplying p(headline|fake) by p(fake) and
-       ## dividing by p(headline|fake)*p(fake) + p(headline|real)*p(real)
-
-       #Compute final probabilites
-       numerator_fake = [p_fake*x for x in total_fake_probabilities.values()]
-       numerator_real = [p_real*x for x in total_real_probabilities.values()]
-
-       final_fake = [numerator_fake[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_fake))]
-       final_real = [numerator_real[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_real))]
-
-       return final_fake, final_real
-     \end{lstlisting}
-
-   \item
-   Finally, in the third part, we have a function called "check\_accuracy" to determine the percentage of statements correctly classified. It does this by accepting $p(fake\|headline)$ from the previous function,
-   as well as an array indicating whether a headline is fake by a 1 or real by a 0. The function then creates a new array that accepts  $p(fake\|headline)$ for a given headline and rounds it to 1 if it is 0.5 or greater, and down to 0 otherwise.
-   The function then subtracts this new array from our checker array and counts the number of non-zero elements. These elements represent incorrect classifications and allow us to determine our accuracy.
-   Our function  implementation is:
-   \begin{lstlisting}[language=Python]
-   def check_accuracy(final_fake, y):
-       '''Given a list of fake probabilities, compare with the actual results by rounding.
-       If the fake  probability is greater than 0.5, consider it fake and if less, consider it real.
-       Output the accuracy rate'''
-       ## At this point we are done and have found p(fake|headline).
-       ## All that remains is accuracy checking
-       ## This part takes final_fake and one of y_tr, y_va, y_te as parameters
-       ## and returns a percentage value in accuracy
-
-       pred_fake = np.array([round(x) for x in final_fake])
-
-       y_2 = np.array(y)
-
-       incorrect = np.count_nonzero(pred_fake - y_2)
-       total = len(y)
-       correct = total - incorrect
-       accuracy = correct/total
-
-       return accuracy
-
-     \end{lstlisting}
-
-
-
-
-
-   \end{enumerate}
-
-   In choosing our parameters m and p for the model, we began with a value of m = $2 \cdot 5833 $ and $ \dfrac {1}{2 \cdot 5833}$ and optimized from there. This was chosen as our starting point because as mentioned on Piazza, it allows for
-   1 example per class per word and is intuitive. We then chose 4 different values of m and p and tested how they perform on our validation set, via a function called "optimize\_mp". Our optimal m and p values were found to be 1 and 5833, respectively, achieving an acuracy on the validation set of 83.7\%.
-   \begin{center} \begin{tabular}{ c|c }
-      \hline
-       m & accuracy \\ [0.5ex]
-      \hline \hline
-       5833 & 83.7\% \\
-       $2 \cdot 5833$ & 83.1\% \\
-       $3 \cdot 5833$ & 82.9\%  \\
-       $4 \cdot 5833$ & 82.7\%  \\
-      \hline
-   \end{tabular} \end{center}
-
-   Our optimize\_mp function is:
-   \begin{lstlisting}[language=Python]
-
-   def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
-       val_acc = {}
-       for m in m_s:
-           print(m)
-           p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
-           final_fake, final_real = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
-           val_acc[m] = check_accuracy(final_fake, y_va)
-       return val_acc
-   \end{lstlisting}
-
-   Finally, on the training set we obtained an accuracy of 83.4\% while on the testing set
+   %\item
+   The final step in the implementation the accuracy is checked (using the function \texttt{check\_accuracy()}
+   with a threshold of 0.5), and the parameters $m$ and $p$ were tuned to produce the best accuracy on
+   the validation set. This was done via a simple search (see the function \texttt{optimize\_mp()}).
+   We began with a value of m = $2 \cdot 5833 $ and $ \dfrac {1}{2 \cdot 5833}$ and optimized from there.
+   This was chosen as our starting point as is 1 example per class per word, which is intuitively what adding in
+   the $m$ and $p$ factors are trying to do - avoiding the issue of too few counts.
+   Some of the values tested are shown in the following table.
+   %We then chose 4 different values of m and p and tested how they perform on our validation set, via a function
+   %called "optimize\_mp()".
+      \begin{center} \begin{tabular}{ c|c }
+         \hline
+          $mp$ & accuracy \\ %[0.5ex]
+         \hline \hline
+          5833 & 83.7\% \\
+          $2 \cdot 5833$ & 83.1\% \\
+          $3 \cdot 5833$ & 82.9\%  \\
+          $4 \cdot 5833$ & 82.7\%  \\
+         \hline
+         \caption{Some tested values for optimizing Naive Bayes, and the corresponding accuracy on the
+               validation set.}
+      \end{tabular} \end{center}
+   Our optimal $m$ and $p$ values were found to be 1 and 5833 (the number of words), respectively, achieving
+   an acuracy on the validation set of 83.7\%.
+   These values gave an accuracy of 83.4\% on the training set, while on the testing set
    we achieved an accuracy of 84.5\%.
 
 
-
-\item 
-In the second part , we created a function called "evaluate" which uses the outputs of the first function -  p(real), p(fake), $p(word\|real)$, $p(word\|fake)$ - as its inputs, uses them to compute $p(headline\|real)$ and $p(healine\|fake)$ for a given
-set of headlines, and in turn uses those to compute $p(real\|headline)$ and $p(fake\|headline)$ for the set of headlines, which is the function output. In in this function that we utlize the fact that \begin{equation}a_1 \cdot a_2 ...=  e^{log{a_1} + log{a_2} ...} \end{equation}, in order to compute 
-$p(headline\|real)$ as the product of $p(word\|real)$ for all words in and outside the statement. Performing the calculation in this way avoids underflow problems.
-The implementation of the function is:
-\begin{lstlisting}[language=Python]
-def evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, SET):
-    ''' Calculate p(fake|headline) for all headlines in a given set (TRAINING, TEST, VALIDATION).
-    Takes p(real), p(fake), p(word|real), p(word|fake) as parameters.'''
-
-    total_real_probabilities = {}
-    total_fake_probabilities = {}
-    
-    all_words = list(real_counts_total.keys())
-    
-    for headline in SET:
-         
-        probabilities_real = []
-        probabilities_fake = []
-        
-        headline_words = list(set( headline.split(' ') )) #converting to set and back to a list removes duplicates
-        for word in headline_words:
-            probabilities_real.append(adjusted_real_stats_training_set.get(word))
-            probabilities_fake.append(adjusted_fake_stats_training_set.get(word))
-        non_headline_words = [x for x in all_words if x not in headline_words]
-        for word in non_headline_words:
-            probabilities_real.append(1 - adjusted_real_stats_training_set.get(word))
-            probabilities_fake.append(1 - adjusted_fake_stats_training_set.get(word))
-        
-        total_real_probability = 0
-        total_fake_probability = 0
-        for k in range(len(probabilities_real)):
-            total_real_probability = total_real_probability + math.log(probabilities_real[k])
-            total_fake_probability = total_fake_probability + math.log(probabilities_fake[k])
-        total_real_probability = math.exp(total_real_probability)
-        total_real_probabilities[headline] = total_real_probability
-        total_fake_probability = math.exp(total_fake_probability)
-        total_fake_probabilities[headline] = total_fake_probability
-
-    ## At this point, we have calculated p(headline|real) and p(headline|fake) for all
-    ## headlines in whatever set we are testing
-    ## Now we need to find p(fake|headline) which means multiplying p(headline|fake) by p(fake) and 
-    ## dividing by p(headline|fake)*p(fake) + p(headline|real)*p(real) 
-
-    #Compute final probabilites
-    numerator_fake = [p_fake*x for x in total_fake_probabilities.values()]
-    numerator_real = [p_real*x for x in total_real_probabilities.values()]
-    
-    final_fake = [numerator_fake[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_fake))]
-    final_real = [numerator_real[i]/(numerator_fake[i] + numerator_real[i]) for i in range(len(numerator_real))]
-
-    return final_fake, final_real
-  \end{lstlisting}
-
-\item 
-Finally, in the third part, we have a function called "check\_accuracy" to determine the percentage of statements correctly classified. It does this by accepting $p(fake\|headline)$ from the previous function,
-as well as an array indicating whether a headline is fake by a 1 or real by a 0. The function then creates a new array that accepts  $p(fake\|headline)$ for a given headline and rounds it to 1 if it is 0.5 or greater, and down to 0 otherwise.
-The function then subtracts this new array from our checker array and counts the number of non-zero elements. These elements represent incorrect classifications and allow us to determine our accuracy.
-Our function  implementation is:
-\begin{lstlisting}[language=Python]
-def check_accuracy(final_fake, y):
-    '''Given a list of fake probabilities, compare with the actual results by rounding.
-    If the fake  probability is greater than 0.5, consider it fake and if less, consider it real.
-    Output the accuracy rate'''
-    ## At this point we are done and have found p(fake|headline).
-    ## All that remains is accuracy checking
-    ## This part takes final_fake and one of y_tr, y_va, y_te as parameters
-    ## and returns a percentage value in accuracy
-
-    pred_fake = np.array([round(x) for x in final_fake])
-    
-    y_2 = np.array(y)
-    
-    incorrect = np.count_nonzero(pred_fake - y_2)
-    total = len(y)
-    correct = total - incorrect
-    accuracy = correct/total    
-    
-    return accuracy
-
-  \end{lstlisting}
-
-
-
-
-
-\end{enumerate}
-
-In choosing our parameters m and p for the model, we began with a value of m = $2 \cdot 5833 $ and $ \dfrac {1}{2 \cdot 5833}$ and optimized from there. This was chosen as our starting point because as mentioned on Piazza, it allows for
-1 example per class per word and is intuitive. We then chose 4 different values of m and p and tested how they perform on our validation set, via a function called "optimize\_mp". Our optimal m and p values were found to not matter so much,as long as they weren't 
-$ \dfrac {1}{1 \cdot 5833}$ and 5833, respectively. If we chose higher values for m and corresponding lower values for p, we achieved an acuracy on the validation set of 91.3\%. 
-\begin{center}
-\begin{tabular}{ |c|c| } 
- \hline
- m & accuracy \\ [0.5ex] 
-\hline \hline
- 5833 & 90.8\% \\ 
- $2 \cdot 5833$ & 91.3\% \\ 
- $3 \cdot 5833$ & 91.3\%  \\
- $4 \cdot 5833$ & 91.3\%  \\ 
- \hline
-\end{tabular}
-\end{center}
-
-Our optimize\_mp function is:
-\begin{lstlisting}[language=Python]
-def optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp):
-    val_acc = {}
-    for m in m_s:
-        print(m)
-        p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
-        final_fake, final_real = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, validation_set)
-        val_acc[m] = check_accuracy(final_fake, y_va)
-    return val_acc
-
-  \end{lstlisting}
-
-Finally, on the training set we obtained an accuracy of 92.5\% while on the testing set we achieved an accuracy of 92.2\%.
-
-
-   \section{Predictive Factors}
+   \section{Predictive Factors for Naive Bayes}
 
 
 
@@ -455,7 +206,7 @@ Finally, on the training set we obtained an accuracy of 92.5\% while on the test
 
       \begin{tabular}{ p{7em}|l || p{7em}|l }
          \hline
-         word     &     $\theta_i$      \\
+         word     &     $\theta_i$   & word & $\theta_i$   \\
          \hline \hline
          trumps      &     -5.2        &  breaking    & 2.63    \\
          us          &     -2.7        &  america     & 2.45    \\
@@ -477,6 +228,36 @@ Finally, on the training set we obtained an accuracy of 92.5\% while on the test
 
 
    \subsection{Ignoring Stop Words}
+   If we eliminate the stop words in the above table, the following list shows the highest (in magnitude)
+   values in $theta$ and the corresponding words. (Note that the logistic regression itself still uses stop
+   words, they are simply ignored in this analysis).
+
+   \begin{table}[h]
+      \centering
+      \renewcommand{\arraystretch}{1.5}
+
+      \begin{tabular}{ p{7em}|l || p{7em}|l }
+         \hline
+         word     &     $\theta_i$   & word & $\theta_i$   \\
+         \hline \hline
+         trumps      &     -5.2        &  breaking    & 2.63    \\
+         says        &     -1.87       &  america     & 2.45    \\
+         comey       &     -1.79       &  hillary     & 2.37    \\
+         turnbull    &     -1.76       &  just        & 2.28    \\
+         ban         &     -1.71       &  u           & 2.14    \\
+         donald      &     -1.68       &  black       & 2.06    \\
+         meeting     &     -1.68       &  victory     & 2.05    \\
+         korea       &     -1.68       &  watch       & 1.85    \\
+         flynn       &     -1.67       &  putin       & 1.7     \\
+         trump       &     -1.66       &  elect       & 1.67    \\
+         \hline
+      \end{tabular}
+
+      \caption{ The words (and corresponding $\theta_i$'s) that have the most impact
+               on classification via logistic regression, ignoring stop words.}
+      \label{part6table2}
+   \end{table}
+
 
 
    \subsection{Analyzing Parameters}
@@ -490,7 +271,7 @@ Finally, on the training set we obtained an accuracy of 92.5\% while on the test
    However, in the logistic regression for classifying headlines, all features have equal magnitude (when
    they are present). Therefore, no bias is introduced by these features that impacts on the classification
    other than the $\theta$'s - so the magnitude of $\theta_i$ is indicative of the importance of the
-   corresponding word. 
+   corresponding word.
 
 
 
@@ -527,7 +308,7 @@ Finally, on the training set we obtained an accuracy of 92.5\% while on the test
    a text representation of the tree (as a \texttt{.dot} file), which was then visualized using the
    \texttt{webgraphviz} tool (available at \url{http://webgraphviz.com/}).
       \begin{figure}[h] \centering
-         \includegraphics[width=4in]{resources/part7b}
+         \includegraphics[width=4in]{resources/part7b_stopwords}
          \caption{The top few layers of the decision tree (depth = 20).}
          \label{part7b}
       \end{figure}
@@ -547,9 +328,18 @@ Finally, on the training set we obtained an accuracy of 92.5\% while on the test
    training are saved in \texttt{resources/part7}.
 
    \subsection{Comparison of All 3 Classifiers}
-   All three classifiers preform much better than random guessing...
+   All three classifiers preform much better than random guessing, and quite well considering the
+   difficulty of the task. Of the three classifiers, Naive Bayes had the best preformance (83.4\%, 83.7\%,
+   and 84.7\% on the training, validation, and testing sets respectively), slightly beating the logistic
+   regression classifier (98\%, 81.7\%, and 84.3\%). Though the difference is slight, it is notable that
+   Naive Bayes achieves this accuracy despite making the extra assumption of conditional independence. It
+   is also worth noting that Naive Bayes does not have significantly higher accuracy on the training set than
+   on the validation or test sets.
+   In last place is the decision tree mentioned above (depth 20, no limit on the maximum number of features
+   used for splitting, and \textit{entropy} as the metric for the quality of a split), which gave an accuracy
+   of 83.8\%, 73.7\%, 75.7\% on the respective sets.
 
-   no conditional independence assumption is made for logistic regression
+
 
 
    \section{Information Theory}
