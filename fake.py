@@ -360,16 +360,13 @@ if __name__ == "__main__":
     rd.shuffle(fake_lines_total)
     rd.shuffle(real_lines_total)
 
-
     fake_lines_training_set = fake_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
     real_lines_training_set = real_lines_total[ :int(round(0.7*len(fake_lines_total))) ]
     
     m = 2*5833
     mp=1
     
-    
     # find the best m,p
-
     mp = 1
     m_s = [(1*5833), (2*5833),(3*5833),(4*5833)]
     val_acc = optimize_mp(fake_lines_training_set, real_lines_training_set, m_s, mp)
@@ -377,12 +374,9 @@ if __name__ == "__main__":
     # Part A: Use TRAINING set to get p(real), p(fake), p(word|real) and p(word|fake) for ALL words
     p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
  
-
     # Part B: Calculate p(fake|headline) given a set of headlines and the parameters from the previous step.
     final_fake_train, final_real_train = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, training_set)
     final_fake_test, final_real_test = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, testing_set)
-
-
     
     # Part C: Check the accuracy of our model
     training_accuracy = check_accuracy(final_fake_train, y_tr)
@@ -420,10 +414,8 @@ if __name__ == "__main__":
     #rd.seed(1)
     #rd.shuffle(fake_lines_total)
     #rd.shuffle(real_lines_total)
-
     #training_set   = fake_lines_total[:int(round(0.7*len(fake_lines_total)))]
     #training_set.extend(   real_lines_total[:int(round(0.7*len(real_lines_total)))] )
-    
     # missing = { x:0 for x in counts_training.keys() if x not in real_stats_training_set.keys() }
     #counts_training.get('zieht')
     #real_stats_training_set.get('zieht')
@@ -432,7 +424,6 @@ if __name__ == "__main__":
     p_real = len(real_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
     p_fake = len(fake_lines_training_set)/(len(fake_lines_training_set) + len(real_lines_training_set))
 
-    
     # p(word)
     # p(word) = count(number of headlines with word)/count(number of headlines)
     
@@ -459,7 +450,7 @@ if __name__ == "__main__":
         p_realIword[word] = (real_stats_training_set.get(word)*p_real)/p_words.get(word)
         p_fakeIword[word] = (fake_stats_training_set.get(word)*p_fake)/p_words.get(word)
     
-     #   Top 10 keywords by percentage
+    #   Top 10 keywords by percentage
     p_realIword_top = top_keywords(p_realIword, 10)
     p_fakeIword_top = top_keywords(p_fakeIword, 10)
     

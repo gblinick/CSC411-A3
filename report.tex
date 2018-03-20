@@ -92,36 +92,31 @@
 
    \section{Naive Bayes Implementation}
    The Naive Bayes algorithm was implemented in three primary functions.
-   %\begin{enumerate}
-   %\item
-   In the first function \texttt{traing\_part()} we use the training set to achieve estimates for p(real),
-   p(fake), $p(word | real)$ and $p(word | fake)$. We estimated $ p(word | real)$ and $p(word | fake)$ by counting
+   In the first function \texttt{traing\_part()} we use the training set to achieve estimates for $p(real)$,
+   $p(fake)$, $p(word\ |\ real)$ and $p(word\ |\ fake)$. We estimated $ p(word\ |\ real)$ and $p(word\ |\ fake)$ by counting
    the number of headlines in the training set where the word appears and the headline is real (or fake), adding a
    factor of $ m \cdot p$, and divided this result by the size of the training set plus $m$. We also included
    words that were not found in the training set (but found in validation or testing) and set their
-   values to $ \dfrac {m \cdot p}{count(headlines) + m}$, i.e. the value they would have from a count of zero in
-   the training set. This function is \texttt{traing\_part()}, which returns the values of p(real) and p(fake)
+   values to $ \frac {m \cdot p}{count(headlines) + m}$, i.e. the value they would have from a count of zero in
+   the training set. This function returns the values of $p(real)$ and $p(fake)$
    and dictionaries with the remaining information.
 
-   %\item
    In the next stage, we created a function \texttt{evaluate()} which uses the outputs of the first
-   function -  p(real), p(fake), $p(word | real)$, $p(word | fake)$ - to
-   compute $p(headline | real)$ and $p(healine | fake)$ for a given set of headlines, and in turn uses
-   those to compute $p(real | headline)$ and $p(fake | headline)$ for the set of headlines, which is
+   function -  $p(real)$, $p(fake)$, $p(word\ |\ real)$, $p(word\ |\ fake)$ - to
+   compute $p(headline\ |\ real)$ and $p(headline\ |\ fake)$ for a given set of headlines, and in turn uses
+   those to compute $p(real\ |\ headline)$ and $p(fake\ |\ headline)$ for the set of headlines, which is
    the function output. To avoid ``underflow'' caused by the multiplication of many small numbers (the
    probabilities for each word are quite low, as most words appear in a small fraction of headlines),
    we utlize the fact that
       \begin{equation*}
-         a_1 \cdot a_2 ... a_i =  e^{ln(a_1) + ln(a_2) ... ln(a_i)}
+         a_1 \cdot a_2\ ...\ \cdot a_i =  e^{ln(a_1) + ln(a_2) + ... + ln(a_i)}
       \end{equation*}
-   in order to compute $p(headline|real)$ as the product of $p(word|real)$ for all words (whether or not
-   the word appears in the headline).
+   in order to compute $p(headline\ |\ real)$ as the product of $p(word\ |\ real)$ for all words.
 
-   %\item
    The final step in the implementation the accuracy is checked (using the function \texttt{check\_accuracy()}
    with a threshold of 0.5), and the parameters $m$ and $p$ were tuned to produce the best accuracy on
    the validation set. This was done via a simple search (see the function \texttt{optimize\_mp()}).
-   We began with a value of m = $2 \cdot 5833 $ and $ \dfrac {1}{2 \cdot 5833}$ and optimized from there.
+   We began with a value of $m = 2 \cdot 5833 $ and $p = \frac {1}{2 \cdot 5833}$ and optimized from there.
    This was chosen as our starting point as is 1 example per class per word, which is intuitively what adding in
    the $m$ and $p$ factors are trying to do - avoiding the issue of too few counts.
    Some of the values tested are shown in the following table.
@@ -134,7 +129,7 @@
 
          \begin{tabular}{ c|c }
             \hline
-            $mp$ & accuracy \\
+            $m$ & accuracy \\
             \hline \hline
             $1 \cdot 5833$ & 90.4\% \\
             $2 \cdot 5833$ &  90.4\% \\
@@ -148,83 +143,74 @@
       \end{table}
 
 
-   We discovered that all our choices for $m$ and $p$ lead to the same accuracy of 90.4\%, so we decided to stay with our initial values for $m$ and $p$ of 2 and 5833, respectively. 
-   These values gave an accuracy of 92.3\% on the training set, while on the testing set
-   we achieved an accuracy of 92.2\%.
+   We discovered that all our choices for $m$ and $p$ lead to the same accuracy of 90.4\%, so we decided to stay
+   with our initial values for $m$ and $p$ of 2 and 5833, respectively. These values gave an accuracy of 92.3\% on
+   the training set, and on the testing set we achieved an accuracy of 92.2\%.
 
 
    \section{Predictive Factors for Naive Bayes}
-   \subsection{Words}
-   The following 4 images present the top 10 words for each relevant probability. Note that for some classes,
-   such as $p(real \| word)$, there were many other words that could have been in the list provided. Also note
-   that for $ p(real \| word)$ the probabilities are slightly greater than 1 due to rounding.
+   \subsection{Predictive Words}
+   The following bullet points present the top 10 words whose presence or absence most strongly indicate that a headline is real/fake
+   based on the naive bayes analysis above. Note that for some classes,
+   such as $p(real \ |\ word)$, there were many other words that could have been in the list provided, as the probabilites were quite high
+   (many words appeared \textit{only} in the fake or real training set).
    \begin{enumerate}
-   \item $p(real \| word)$
-   \\
-
-           %\includegraphics[width=4in]{resources/part3/p(realword)}
-	
-	"xi", "wrap", "whats", "west", "turnbull", "troops", "travel", "tourism", "tillerson", "third"
-
-   \item $p(real \| not\_word)$
-   \\
-          % \includegraphics[width=4in]{resources/part3/p(realnotword)}
-
-	"trump", "the", "to", "hillary", "a", "is", "and", "for", "in", "of"
-
-
-   \item $p(fake \| word)$
-   
-          % \includegraphics[width=4in]{resources/part3/p(fakeword)}
-	"thug", "these", "surprise", "supression", "story", "steal", "start", "soros", "save", "protestor"
-
-
-   \item $p(fake \| not\_word)$
-   
-          % \includegraphics[width=4in]{resources/part3/p(fakenotword)}
-
-	"donald", "trumps", "us", "north", "says", "korea", "ban", "turnbull", "travel", "wall"
-
-
-
+      \item Maximize $p(real \ |\ word)$:
+              %\includegraphics[width=4in]{resources/part3/p(realword)}
+   	          ``xi'', ``wrap", ``whats", ``west", ``turnbull", ``troops", ``travel", ``tourism", ``tillerson", ``third"
+      \item Maximize $p(real \ |\ \neg word)$:
+             % \includegraphics[width=4in]{resources/part3/p(realnotword)}
+   	         ``trump", ``the", ``to", ``hillary", ``a", ``is", ``and", ``for", ``in", ``of"
+      \item Maximize $p(fake \ |\ word)$:
+             % \includegraphics[width=4in]{resources/part3/p(fakeword)}
+   	         ``thug", ``these", ``surprise", ``supression", ``story", ``steal", ``start", ``soros", ``save", ``protestor"
+      \item Maximize $p(fake \ |\ \neg word)$:
+             % \includegraphics[width=4in]{resources/part3/p(fakenotword)}
+   	         ``donald", ``trumps", ``us", ``north", ``says", ``korea", ``ban", ``turnbull", ``travel", ``wall"
    \end{enumerate}
 
-   These values were obtained by applying Bayes rule. More specifically, we calculated $p(real \| word)$ by
-   $ \dfrac {p(word \| real) \cdot p(real)}{p(word)}$. $p(word \| real)$ can be obtained for every word by taking
+   These values were obtained by applying Bayes rule. More specifically, we calculated $p(real \ |\ word)$ by
+   $ \frac {p(word \ |\ real) \cdot p(real)}{p(word)}$. $p(word \ |\ real)$ can be obtained for every word by taking
    the number of headlines with a given word in the training set that are also real and dividing it by the
    total number of headlines that are real in the training set. $p(real)$ is the number of headlines in the
-   training set that are real divided by the total number of headlines in the training set. Finally, p(word) is
+   training set that are real divided by the total number of headlines in the training set. Finally, $p(word)$ is
    the number of headlines in the training set with the word divided by the number of headlines in the training set.
    All these are easily obtained.
-   \\
-   To obtain $p(real \| not\_word)$, we use $ \dfrac {p(not\_word \| real) \cdot p(real)}{p(not\_word)}$. p(real)
-   is the same from the previous step, $p(not\_word \| real)$ is 1 - $p(real \| word)$, and $p(not\_word)$ is the
+
+   To obtain $p(real \ |\ not\_word)$, we use $ \frac {p(not\_word \ |\ real) \cdot p(real)}{p(not\_word)}$. p(real)
+   is the same from the previous step, $p(not\_word \ |\ real)$ is 1 - $p(real \ |\ word)$, and $p(not\_word)$ is the
    number of headlines without a word in the training  set divided by the total number of headlines.
-   The calculcations for $p(real \| word)$ and $p(real \| not\_word)$ proceed in an equivalent way with an
+   The calculcations for $p(real \ |\ word)$ and $p(real \ |\ not\_word)$ proceed in an equivalent way with an
    appropriate substitution of "fake" for any mention of "real".
-   \\
-  
 
+   What is observable from looking at the numbers associated with these results is that the presence of certain
+   words has far greater predictive ability than the absence of any given word. This is reasonable,
+   as the headlines are quite short (relative to the number of total words), so most ``vectors'' representing
+   a headline are sparse, and that sparsity is the same for both real and fake headlines.
+   It is particularly intersting to note, however, how strongly the absence of stop words indicates that a
+   headline is real.
 
-   What is observable from these results is that the precense of certain words has far greater predictive ability
-   than the absence of any given word. This is logical, as certain words that appear rarely and only in either
-   real or fake headlines will be entirely associated with the class they are found in. By contrast, the
-   absence of any one word is not enough to definatively assign a class of real or fake since the remaining
-   headlines without the given word do not all fall into one class or another.
-
-   \subsection{Non Stop Words}
+   \subsection{Without Stop Words}
+   If we ignore stop words (obtained from \texttt{sklearn} as suggested), the following lists show the top words
+   whose presence indicate that a word is real/fake. Only 1 stop word was included in the lists above (looking at
+   words whose \textit{presence} matters) however, so these words are almost identical to those above.
    \begin{enumerate}
-\item Fake Words
-"thug", "surprise", "supression", "story", "steal", "start", "soros", "save", "protestor", "msnbc"
-\item Real Words
-	"xi", "wrap", "whats", "west", "turnbull", "troops", "travel", "tourism", "tillerson", "sessions"
-
+      \item Real Words
+         ``xi", ``wrap", ``whats", ``west", ``turnbull", ``troops", ``travel", ``tourism", ``tillerson", ``third'' %``sessions"
+      \item Fake Words
+         ``thug", ``surprise", ``supression", ``story", ``steal", ``start", ``soros", ``save", ``protestor", ``msnbc"
    \end{enumerate}
 
    \subsection{Stop Words}
-   Removing stopwords might make sense because stop words just might by change have a large discrepency in the
-   training data that has no real predictive ability, and therefore cause the model to overfit. It might make
-   sense to keep stopwords because they may in fact have predictive ability.
+   %Removing stopwords might make sense because stop words just might by change have a large discrepency in the
+   %training data that has no real predictive ability, and therefore cause the model to overfit. It might make
+   %sense to keep stopwords because they may in fact have predictive ability.
+   When interpreting the model, stop words do not seem like the type of words that would be important, as they
+   do not reflect ideas related to the classification of a headline as real or fake, and it is perhaps more
+   likely that any patterns found in stop words are due to the division of the training and other sets.
+   However, it is reasonable to suppose that real news outlets do use stop words differently than fake news
+   outlets, in which case, they are important to building and interpreting the model. Analysis including stop
+   words may even provide a way to learn about how stop words are used by different media types.
 
 
    \section{Logistic Regression}
@@ -241,7 +227,8 @@
    found in the \texttt{resources/part4} directory.
 
    The following learning curves shows the results for the hyperparameter settings $\gamma = 1$ with a learning
-   rate of $10^{-3}$, though the results did not vary much with changes to $\gamma$.
+   rate of $10^{-3}$, though the results did not vary much with changes to $\gamma$. It is curious, but likely due
+   to random sampling, that the testing set consistently preforms better than the validation set.
    \begin{figure}[h] \centering
       \includegraphics[width=4in]{resources/part4}
       \caption{ Learning curve for the logistic regression with a learning rate of $10^{-3}$ and
@@ -312,7 +299,7 @@
 
 
    \subsection{Ignoring Stop Words}
-   If we eliminate the stop words in the above table, the following list shows the highest (in magnitude)
+   If we eliminate the stop words in the above table, the list in table \ref{part6table2} shows the highest (in magnitude)
    values in $theta$ and the corresponding words. (Note that the logistic regression itself still uses stop
    words, they are simply ignored in this analysis). Once again, some of these words correspond to those
    in part 3 (when stop words were ignored), though quite a few are new (e.g. ``breaking'').
@@ -370,7 +357,7 @@
    Many of the settings served as ways to limit the size of the decision tree, so this result is not unexpected.
 
    Decision trees with a maximum depth of $\{ 2, 3, 5, 10, 15, 20, 35, 50, 75, 100, None \}$ were built, and
-   the results on the training, validation, and testing sets are shown in the figure below. The final point,
+   the results on the training, validation, and testing sets are shown figure \ref{part7a} below. The final point,
    not plotted, with no limit on the maximum depth, gave an accuracy of $1, 0.76 0.76$ on the training,
    validation, and testing sets respectively.
       \begin{figure}[h] \centering
@@ -379,6 +366,7 @@
          \caption{Plot showing the preformance of \texttt{sklearn} decision trees with
             varying depth. The split condition was maximum entropy, there was no limit on the maximum
             number of features for a split, and stop words were included.}
+         \label{part7a}
       \end{figure}
    As can be seen from the figure, the larger the depth of the decision tree, the greater accuracy achieved on
    the testing set. However, improvement is small on the validation and testing sets after a depth of
@@ -393,7 +381,7 @@
    a text representation of the tree (as a \texttt{.dot} file), which was then visualized using the
    \texttt{webgraphviz} tool (available at \url{http://webgraphviz.com/}).
       \begin{figure}[h] \centering
-         \includegraphics[width=4in]{resources/part7b_stopwords}
+         \includegraphics[width=4in]{resources/part7b}
          \caption{The top few layers of the decision tree (depth = 20).}
          \label{part7b}
       \end{figure}
@@ -424,7 +412,7 @@
    on the validation or test sets.
    In last place is the decision tree mentioned above (depth 20, no limit on the maximum number of features
    used for splitting, and \textit{entropy} as the metric for the quality of a split), which gave an accuracy
-   of 83.8\%, 73.7\%, 75.7\% on the respective sets.
+   of 83.8\%, 73.7\%, and 75.7\% on the respective sets.
 
 
 
