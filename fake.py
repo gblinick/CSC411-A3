@@ -391,7 +391,8 @@ if __name__ == "__main__":
     print("training accuracy:", training_accuracy*100,"%")
     print("testing accuracy:", testing_accuracy*100,"%")
     
-    #testing
+    '''
+    # Testing
     #p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, 10, 5)
     #p_fake2, p_real2, adjusted_fake_stats_training_set2, adjusted_real_stats_training_set2 = training_part(fake_lines_training_set, real_lines_training_set, 10000, 0.5)
 
@@ -400,8 +401,8 @@ if __name__ == "__main__":
 
     #val_accuracy = check_accuracy(final_fake_val, y_va)
     #val_accuracy2 = check_accuracy(final_fake_va2, y_va)
-    
-    #%%
+    '''
+
   
     ## Part 3
     # For this part, we want to find p(real|word) - the top 10 percentages
@@ -459,12 +460,29 @@ if __name__ == "__main__":
         p_fakeIword[word] = (fake_stats_training_set.get(word)*p_fake)/p_words.get(word)
     
      #   Top 10 keywords by percentage
-    p_realIword_top = top_keywords(p_realIword, 2000)
-    p_fakeIword_top = top_keywords(p_fakeIword, 2000)
+    p_realIword_top = top_keywords(p_realIword, 10)
+    p_fakeIword_top = top_keywords(p_fakeIword, 10)
     
-        
+    #p_realIword_bot = bottom_keywords(p_realIword, 10)
+    #p_fakeIword_bot = bottom_keywords(p_fakeIword, 10)
+    
+    p_realInot_word = {}
+    p_fakeInot_word = {}
+    
+    p_not_words = {}
+    for word in counts_training2.keys():
+        p_not_words[word] = (divisor - counts_training2.get(word))/divisor
+    
+    for word in p_not_words.keys():
+        p_realInot_word[word] = ((1 - real_stats_training_set.get(word))*p_real)/p_not_words.get(word)
+        p_fakeInot_word[word] = ((1 - fake_stats_training_set.get(word))*p_fake)/p_not_words.get(word)
+    
+    p_realInot_word_top = top_keywords(p_realInot_word, 10)
+    p_fakeInot_word_top = top_keywords(p_fakeInot_word, 10)
+    
+    
 
-#%%
+
 
     ## Part 4
     all_words = list( fake_stats_total.keys() )

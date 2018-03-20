@@ -154,6 +154,36 @@
 
 
    \section{Predictive Factors for Naive Bayes}
+   \subsection{Words}
+   The following 4 images present the top 10 words for each relevant probability. Note that for some classes, such as $p(real \| word)$, there were many other words that could have been in the list provided. Also note that for $ p(real \| word)$ the probabilities are
+   slightly greater than 1 due to rounding.
+   \begin{enumerate}
+   \item $p(real \| word)$
+   \\
+           \includegraphics[width=4in]{resources/part3/p(realword)}
+
+   \item $p(real \| not\_word)$
+   \\
+           \includegraphics[width=4in]{resources/part3/p(realnotword)}
+
+   \item $p(fake \| word)$
+   \\
+           \includegraphics[width=4in]{resources/part3/p(fakeword)}
+
+   \item $p(fake \| not\_word)$
+   \\
+           \includegraphics[width=4in]{resources/part3/p(fakenotword)}
+
+   \end{enumerate}
+
+   These values were obtained by applying Bayes rule. More specifically, we calculated $p(real \| word)$ by $ \dfrac {p(word \| real) \cdot p(real)}{p(word)}$. $p(word \| real)$ can be obtained for every word by taking the number of headlines with a given word
+   in the training set that are also real and dividing it by the total number of headlines that are real in the training set. $p(real)$ is the number of headlines in the training set that are real divided by the total number of headlines in the training set. Finally, p(word) is the number of headlines in the training set with the word divided by the number of headlines in the training set. All these are easily obtained.
+   \\
+   To obtain $p(real \| not\_word)$, we use $ \dfrac {p(not\_word \| real) \cdot p(real)}{p(not\_word)}$. p(real) is the same from the previous step, $p(not\_word \| real)$ is 1 - $p(real \| word)$, and $p(not\_word)$ is the number of headlines without a word in the training  set divided by the total number of headlines.
+   The calculcations for $p(real \| word)$ and $p(real \| not\_word)$ proceed in an equivalent way with an appropriate substitution of "fake" for any mention of "real".
+   \\
+   What is observable from these results is that the precense of certain words has far greater predictive ability than the absence of any given word. This is logical, as certain words that appear rarely and only in either real or fake headlines will be entirely associated
+   with the class they are found in. By contrast, the absence of any one word is not enough to definatively assign a class of real or fake since the remaining headlines without the given word do not all fall into one class or another.
 
 
 
