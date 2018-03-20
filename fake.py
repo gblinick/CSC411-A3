@@ -60,6 +60,14 @@ def top_keywords(dict, num):
     kv = sorted( zip(vals, keys), reverse=True )[:num] #sorts both lists based on order of vals, and selects the top num results
     return kv
 
+def bottom_keywords(dict, num):
+    ''' returns a list of tuples with the keys in dict having the highest value;
+    num tuples will in the list'''
+    keys = dict.keys()
+    vals = dict.values() #the order will match, given that dict is not touched in between calls
+    kv = sorted( zip(vals, keys))[:num] #sorts both lists based on order of vals, and selects the top num results
+    return kv
+
 def add_words(dict1, dict2):
     missing = { x:0 for x in dict1.keys() if x not in dict2.keys() }
     dict2.update( missing )
@@ -400,8 +408,8 @@ if __name__ == "__main__":
     p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set = training_part(fake_lines_training_set, real_lines_training_set, m, mp)
  
     ## Part 2: Calculate p(fake|headline) given a set of headlines and the parameters from the previous step.
-    #final_fake_train, final_real_train = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, training_set)
-    #final_fake_test, final_real_test = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, testing_set)
+    final_fake_train, final_real_train = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, training_set)
+    final_fake_test, final_real_test = evaluate(p_fake, p_real, adjusted_fake_stats_training_set, adjusted_real_stats_training_set, testing_set)
 
     
     ## Part 3: Check the accuracy of our model
@@ -479,8 +487,27 @@ if __name__ == "__main__":
         p_fakeIword[word] = (fake_stats_training_set.get(word)*p_fake)/p_words.get(word)
     
      #   Top 10 keywords by percentage
-    p_realIword_top = top_keywords(p_realIword, 2000)
-    p_fakeIword_top = top_keywords(p_fakeIword, 2000)
+    p_realIword_top = top_keywords(p_realIword, 10)
+    p_fakeIword_top = top_keywords(p_fakeIword, 10)
+    
+    #p_realIword_bot = bottom_keywords(p_realIword, 10)
+    #p_fakeIword_bot = bottom_keywords(p_fakeIword, 10)
+    
+    p_realInot_word = {}
+    p_fakeInot_word = {}
+    
+    p_not_words = {}
+    for word in counts_training2.keys():
+        p_not_words[word] = (divisor - counts_training2.get(word))/divisor
+    
+    for word in p_not_words.keys():
+        p_realInot_word[word] = ((1 - real_stats_training_set.get(word))*p_real)/p_not_words.get(word)
+        p_fakeInot_word[word] = ((1 - fake_stats_training_set.get(word))*p_fake)/p_not_words.get(word)
+    
+    p_realInot_word_top = top_keywords(p_realInot_word, 10)
+    p_fakeInot_word_top = top_keywords(p_fakeInot_word, 10)
+    
+    
     
         
 
