@@ -160,19 +160,19 @@
    \begin{enumerate}
    \item $p(real \| word)$
    \\
-           \includegraphics[width=4in]{resources/part3/p(realword)}
+           \includegraphics[width=4in]{resources/part3/realword}
 
    \item $p(real \| not\_word)$
    \\
-           \includegraphics[width=4in]{resources/part3/p(realnotword)}
+           \includegraphics[width=4in]{resources/part3/realnotword}
 
    \item $p(fake \| word)$
    \\
-           \includegraphics[width=4in]{resources/part3/p(fakeword)}
+           \includegraphics[width=4in]{resources/part3/fakeword}
 
    \item $p(fake \| not\_word)$
    \\
-           \includegraphics[width=4in]{resources/part3/p(fakenotword)}
+           \includegraphics[width=4in]{resources/part3/fakenotword}
 
    \end{enumerate}
 
@@ -185,8 +185,19 @@
    What is observable from these results is that the precense of certain words has far greater predictive ability than the absence of any given word. This is logical, as certain words that appear rarely and only in either real or fake headlines will be entirely associated
    with the class they are found in. By contrast, the absence of any one word is not enough to definatively assign a class of real or fake since the remaining headlines without the given word do not all fall into one class or another.
 
+   \subsection{No Stop Words}
+ \begin{enumerate} 
+   \item Predict Real
+   \\
+           \includegraphics[width=4in]{resources/part3/3breal}
+   \item Predict Fake
+   \\
+           \includegraphics[width=4in]{resources/part3/3bfake}
 
-
+\end{enumerate}
+  \subsection{3c}
+Removing stopwords might make sense because stop words just might by change have a large discrepency in the training data that has no real predictive ability, and therefore cause the model to overfit. It might make sense to keep stopwords because
+they may in fact have predictive ability. 
 
    \section{Logistic Regression}
    Code from project 2 was modified to run simple logistic regression to predict whether a headline is real
