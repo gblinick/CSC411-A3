@@ -333,7 +333,6 @@ if __name__ == "__main__":
     fake_stats_total, real_stats_total = add_words(fake_stats_total, real_stats_total) #add missing words to each dict
 
     #   Get counts 
-
     fake_counts_total = get_count(fake_lines_total) #compute counts for each word
     real_counts_total = get_count(real_lines_total)
     fake_counts_total, real_counts_total = add_words(fake_counts_total, real_counts_total) #add missing words to each dict
